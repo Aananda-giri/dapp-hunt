@@ -1,0 +1,30 @@
+
+<!-- templates/generating.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="text-center">
+    <h1 class="text-3xl font-bold mb-4">Generating Lean Canvas</h1>
+    <p class="mb-8">
+        The AI is generating your lean canvas in the background. This typically takes 2-3 minutes.<br>
+        Please don't refresh, the page will be automatically reloaded.
+    </p>
+    
+    <div class="loading-animation mb-8">
+        <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
+    </div>
+</div>
+
+<script>
+    // Fetch generate-output endpoint and redirect to results page when complete
+    fetch('/generate-output')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.href = '{{ url_for("results") }}';
+            } else {
+                alert('Error generating lean canvas: ' + data.message);
+                window.location.href = '{{ url_for("verify") }}';
+            }
+        });
+</script>
+{% endblock %}

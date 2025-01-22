@@ -1,0 +1,28 @@
+
+<!-- templates/processing.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="text-center">
+    <h1 class="text-3xl font-bold mb-4">Processing Sources</h1>
+    <p class="mb-8">The information sources you added are being scraped and cleaned. This typically takes less than 1 minute.</p>
+    
+    <div class="loading-animation mb-8">
+        <!-- Add your preferred loading animation here -->
+        <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
+    </div>
+</div>
+
+<script>
+    // Fetch crawl-data endpoint and redirect to verify page when complete
+    fetch('/crawl-data')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.href = '{{ url_for("verify") }}';
+            } else {
+                alert('Error processing sources: ' + data.message);
+                window.location.href = '{{ url_for("get_started") }}';
+            }
+        });
+</script>
+{% endblock %}

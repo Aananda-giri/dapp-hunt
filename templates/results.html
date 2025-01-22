@@ -1,0 +1,27 @@
+
+<!-- templates/results.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold text-center mb-4">Done!</h1>
+    <p class="text-center mb-8">Make sure to download your lean canvas with the button below.</p>
+
+    <div class="text-center mb-8">
+        <a href="{{ url_for('download', filename=download_filename) }}"
+           class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+            Download Lean Canvas
+        </a>
+    </div>
+
+    <div class="space-y-6">
+        {% for key, value in results.items() %}
+        <div class="border rounded-lg p-4">
+            <h2 class="text-xl font-semibold mb-2">{{key}}</h2>
+            <div class="h-48 overflow-y-auto bg-white p-4 rounded border">
+                {{value.output_text}}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,201 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lean Canvas Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>
+
+<!-- templates/homepage.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="text-center">
+    <h1 class="text-4xl font-bold mb-8">Generate Lean Canvas</h1>
+    <a href="{{ url_for('get_started') }}" 
+       class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        Get Started
+    </a>
+</div>
+{% endblock %}
+
+<!-- templates/get_started.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold text-center mb-4">Gather Product Information</h1>
+    <p class="text-center mb-8">Add information sources for your product. The bot will search through and use this information to generate evidence-based responses.</p>
+    
+    <form method="POST" class="space-y-6">
+        <div>
+            <label class="block text-gray-700 text-sm font-bold mb-2">
+                Product/Company Name
+            </label>
+            <input type="text" name="product_name" required
+                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                   placeholder="Enter product/company name">
+        </div>
+
+        <div class="grid grid-cols-2 gap-8">
+            <!-- Articles Column -->
+            <div>
+                <h3 class="text-xl font-semibold mb-4">Articles</h3>
+                {% for i in range(10) %}
+                <input type="text" name="news_urls"
+                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2"
+                       placeholder="Article URL {{ i + 1 }}">
+                {% endfor %}
+            </div>
+
+            <!-- YouTube Column -->
+            <div>
+                <h3 class="text-xl font-semibold mb-4">YouTube</h3>
+                {% for i in range(10) %}
+                <input type="text" name="youtube_urls"
+                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2"
+                       placeholder="Video URL {{ i + 1 }}">
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="flex justify-center space-x-4 mt-8">
+            <a href="{{ url_for('homepage') }}"
+               class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                Back
+            </a>
+            <button type="submit"
+                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Next
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+<!-- templates/processing.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="text-center">
+    <h1 class="text-3xl font-bold mb-4">Processing Sources</h1>
+    <p class="mb-8">The information sources you added are being scraped and cleaned. This typically takes less than 1 minute.</p>
+    
+    <div class="loading-animation mb-8">
+        <!-- Add your preferred loading animation here -->
+        <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
+    </div>
+</div>
+
+<script>
+    // Fetch crawl-data endpoint and redirect to verify page when complete
+    fetch('/crawl-data')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.href = '{{ url_for("verify") }}';
+            } else {
+                alert('Error processing sources: ' + data.message);
+                window.location.href = '{{ url_for("get_started") }}';
+            }
+        });
+</script>
+{% endblock %}
+
+<!-- templates/verify.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold text-center mb-4">Check Product Sources</h1>
+    <p class="text-center mb-8">
+        Check that the information below is what you expected to be extracted. Sometimes errors occur while scraping,
+        like YouTube videos with missing transcripts or gated news articles.
+    </p>
+
+    <h2 class="text-2xl font-semibold mb-4">Product: {{ product_name }}</h2>
+
+    <div class="space-y-6">
+        {% for item in crawled_data %}
+        <div class="border rounded-lg p-4">
+            <h3 class="font-semibold mb-2">Source: {{ item.source }}</h3>
+            <div class="h-48 overflow-y-auto bg-white p-4 rounded border">
+                {{ item.content }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="flex justify-center space-x-4 mt-8">
+        <a href="{{ url_for('get_started') }}"
+           class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+            Back
+        </a>
+        <a href="{{ url_for('generating') }}"
+           class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Generate
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+<!-- templates/generating.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="text-center">
+    <h1 class="text-3xl font-bold mb-4">Generating Lean Canvas</h1>
+    <p class="mb-8">
+        The AI is generating your lean canvas in the background. This typically takes 2-3 minutes.<br>
+        Please don't refresh, the page will be automatically reloaded.
+    </p>
+    
+    <div class="loading-animation mb-8">
+        <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
+    </div>
+</div>
+
+<script>
+    // Fetch generate-output endpoint and redirect to results page when complete
+    fetch('/generate-output')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.href = '{{ url_for("results") }}';
+            } else {
+                alert('Error generating lean canvas: ' + data.message);
+                window.location.href = '{{ url_for("verify") }}';
+            }
+        });
+</script>
+{% endblock %}
+
+<!-- templates/results.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold text-center mb-4">Done!</h1>
+    <p class="text-center mb-8">Make sure to download your lean canvas with the button below.</p>
+
+    <div class="text-center mb-8">
+        <a href="{{ url_for('download', filename=download_filename) }}"
+           class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+            Download Lean Canvas
+        </a>
+    </div>
+
+    <div class="space-y-6">
+        {% for i in range(summaries|length) %}
+        <div class="border rounded-lg p-4">
+            <h2 class="text-xl font-semibold mb-2">Summary ({{ i + 1 }} of {{ summaries|length }})</h2>
+            <div class="h-48 overflow-y-auto bg-white p-4 rounded border">
+                {{ summaries[i].content }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

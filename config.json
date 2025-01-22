@@ -1,0 +1,22 @@
+{
+  "product": "google",
+  "openai_model": "gpt-3.5-turbo",
+  "news_urls": [
+    "https://en.wikipedia.org/wiki/Google"
+  ],
+  "youtube_urls": [
+    "https://www.youtube.com/watch?v=Rl5M1CzgEH4"
+  ],
+  "prompt_template": "You are a research chatbot having a conversation with a human.\n\nGiven the following information about {product}, give a professional and detailed answer to the final question.\n\n{context}\n\n{chat_history}\nHuman: {human_input}\nChatbot:",
+  "framework_questions": {
+    "overall": "What is {product}? Give a description of what it does and why it exists.",
+    "target_users": "Who is {product} intended for? These groups of people are called target users.",
+    "problems": "What are the reasons for target users to seek out, and adopt, {product}?",
+    "solutions": "How does {product} address each one of these reasons?",
+    "unfair_advantage": "What makes {product} difficult to compete with?",
+    "unique_value_proposition": "What makes {product} unique or special compared to others?",
+    "channels": "Which channels does {product} use to reach its target users?",
+    "costs": "What operating costs are incurred by {product}?",
+    "revenue": "How does {product} generate revenue?"
+  }
+}

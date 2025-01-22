@@ -1,0 +1,36 @@
+
+<!-- templates/verify.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold text-center mb-4">Check Product Sources</h1>
+    <p class="text-center mb-8">
+        Check that the information below is what you expected to be extracted. Sometimes errors occur while scraping,
+        like YouTube videos with missing transcripts or gated news articles.
+    </p>
+
+    <h2 class="text-2xl font-semibold mb-4">Product: {{ product_name }}</h2>
+
+    <div class="space-y-6">
+        {% for item in crawled_data %}
+        <div class="border rounded-lg p-4">
+            <h3 class="font-semibold mb-2">Source: {{ item.source }}</h3>
+            <div class="h-48 overflow-y-auto bg-white p-4 rounded border">
+                {{ item.content }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="flex justify-center space-x-4 mt-8">
+        <a href="{{ url_for('get_started') }}"
+           class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+            Back
+        </a>
+        <a href="{{ url_for('generating') }}"
+           class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Generate
+        </a>
+    </div>
+</div>
+{% endblock %}
