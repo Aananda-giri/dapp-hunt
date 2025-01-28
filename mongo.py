@@ -1,5 +1,5 @@
 import csv
-import datetime
+from datetime import datetime
 import os
 import time
 from pymongo.server_api import ServerApi
@@ -94,7 +94,7 @@ class Mongo():
         new_message = {
             "query": query,
             "response": response,
-            "timestamp": datetime.datetime.now(datetime.UTC),
+            "timestamp": datetime.now(),
             "source": source
         }
 
