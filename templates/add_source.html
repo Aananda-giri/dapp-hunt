@@ -1,0 +1,173 @@
+<!-- "add_source.html": """ -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add New Source</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl mb-8">Add New product/company</h1>
+        
+        <div class="flex justify-center space-x-4 mt-8">
+            <button 
+                    type="button" 
+                    id="sampleButton" 
+                    class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                    Fill Sample Data
+                </button>
+
+            <a href="/" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 font-bold py-2 px-4 rounded">
+                Home
+            </a>
+        </div>
+        
+        <form id="sourceForm" class="bg-white p-6 rounded shadow">
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">
+                    Product/Company Name
+                </label>
+                <input id="sourceInput" type="text" name="source" required
+                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                   placeholder="Enter product/company name">
+                
+            </div>
+            <div class="mb-4">
+                <h3 class="text-xl font-semibold mb-4">Urls</h3>
+                <div id="urlInputs">
+                    <!-- URL inputs will be generated here -->
+                </div>
+                <!-- <label class="block mb-2">URLs (one per line):</label> -->
+                <!-- <textarea name="urls" class="w-full p-2 border rounded" rows="5"></textarea> -->
+            </div>
+
+            <div id="loadingState" class="hidden mb-4">
+                <div class="flex items-center">
+                    <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500 mr-3"></div>
+                    <span id="loadingText">Processing...</span>
+                </div>
+            </div>
+            <button type="submit" id="submitButton" class="bg-gray-500 text-white px-4 py-2 rounded">
+                Submit
+            </button>
+        </form>
+    </div>
+    <script>
+        // Generate 10 URL input fields
+        const urlInputsContainer = document.getElementById('urlInputs');
+        for (let i = 0; i < 10; i++) {
+            const input = document.createElement('input');
+            input.id = `url${i}`;
+            input.type = 'text';
+            input.name = 'urls[]';
+            input.className = 'w-full p-2 border rounded mb-2';
+            input.placeholder = `URL ${i + 1}: Article or youtube-video`;
+            urlInputsContainer.appendChild(input);
+        }
+        
+        // Sample data button handler (Add sample data to form )
+        // -----------------------------------------------------
+        
+        const sampleData2 = {
+            "product": "SUI",
+            "openai_model": "gpt-3.5-turbo",
+            "news_urls": [
+            "https://www.coindesk.com/tech/2023/11/25/sui-raises-300m-for-scalable-blockchain/",
+            "https://decrypt.co/143568/what-makes-sui-blockchain-special",
+            "https://techcrunch.com/2023/11/20/sui-blockchain-partners-with-gamefi/",
+            "https://www.sui.io/news/latest-developer-tools/",
+            "https://www.a16z.com/portfolio/sui/"
+            ],
+            "youtube_urls": [
+            "https://www.youtube.com/watch?v=F8dIrX3VZyE",
+            "https://www.youtube.com/watch?v=Cz_MRRk-DQo",
+            "https://www.youtube.com/watch?v=I6L2uscsQgE"
+            ],
+            "prompt_template": "You are a research chatbot having a conversation with a human.\n\nGiven the following information about {product}, give a professional and detailed answer to the final question.\n\n{context}\n\n{chat_history}\nHuman: {human_input}\nChatbot:",
+            "framework_questions": {
+            "overall": "SUI is a high-performance blockchain platform designed to support scalable, low-latency transactions and advanced decentralized applications (dApps). It exists to solve challenges like slow transaction speeds and high costs in existing blockchain systems, making it ideal for Web3 gaming, DeFi, and beyond.",
+            "target_users": "SUI targets Web3 developers, gaming companies, DeFi platforms, and enterprises seeking scalable blockchain solutions. Additionally, it caters to retail investors and crypto enthusiasts looking for efficient and fast blockchain transactions.",
+            "problems": "Developers face issues with current blockchains such as slow transaction speeds, limited scalability, and high gas fees. Gaming and DeFi platforms require a blockchain that can handle high throughput with minimal delays. Enterprises seek reliable and scalable solutions for decentralized applications.",
+            "solutions": "SUI addresses these problems by enabling parallel transaction processing, reducing latency, and minimizing transaction costs. It provides developer-friendly tools for dApp creation, making the process more efficient. For enterprises, it offers scalability and reliability, suitable for high-volume use cases like gaming and financial services.",
+            "unfair_advantage": "SUI leverages its unique consensus mechanism that allows parallel processing of transactions, setting it apart from competitors like Solana and Avalanche. It also has strong backing from top-tier investors like a16z, ensuring robust financial support and credibility.",
+            "unique_value_proposition": "SUI is a next-generation blockchain offering unparalleled transaction speeds, scalability, and developer-friendly tools, making it the ideal platform for Web3 innovation in gaming and DeFi.",
+            "channels": "SUI reaches its users through its official website, developer documentation, community channels like Discord and Twitter, partnerships with gaming platforms, and events such as hackathons and Web3 conferences.",
+            "costs": "Operating costs for SUI include developer salaries, infrastructure maintenance for blockchain nodes, community engagement expenses, and marketing efforts for adoption campaigns.",
+            "revenue": "SUI generates revenue through transaction fees, enterprise partnerships for tailored solutions, and validator staking mechanisms that incentivize network security and participation."
+            }
+        }
+        const sampleData = {
+            source: "google",
+                urls: [
+                    "https://en.wikipedia.org/wiki/Google",
+                    "https://en.wikipedia.org/wiki/History_of_Google"
+                    // Add more sample URLs as needed
+                ]
+        };
+        document.getElementById('sampleButton').onclick = () => {
+            document.getElementById('sourceInput').value = sampleData.source;
+            
+            for (let index in sampleData.urls){
+                // console.log(index);
+                document.getElementById(`url${index}`).value = sampleData.urls[index];
+
+            }
+        };
+
+        document.getElementById('sourceForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            // Get all non-empty URL values
+            const urls = [...formData.getAll('urls[]')].filter(url => url.trim());
+            
+            // Show loading state
+            const loadingState = document.getElementById('loadingState');
+            const loadingText = document.getElementById('loadingText');
+            const submitButton = document.getElementById('submitButton');
+            
+            loadingState.classList.remove('hidden');
+            submitButton.disabled = true;
+            submitButton.classList.add('opacity-50');
+            loadingText.textContent = 'Crawling & generating (might take 2-3 minutes)...';
+    
+            try {
+                const response = await fetch('/add_source', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        source: formData.get('source'),
+                        urls: urls
+                    })
+                });
+    
+                const reader = response.body.getReader();
+                
+                while (true) {
+                    const {value, done} = await reader.read();
+                    if (done) break;
+                    
+                    const text = new TextDecoder().decode(value);
+                    const updates = text.split('\n').filter(Boolean).map(JSON.parse);
+                    
+                    for (const update of updates) {
+                        if (update.status === 'crawling') {
+                            loadingText.textContent = 'Crawling...';
+                        } else if (update.status === 'generating') {
+                            loadingText.textContent = 'Generating summary...';
+                        } else if (update.status === 'success') {
+                            window.location.href = update.redirect_url || '/';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                loadingState.classList.add('hidden');
+                submitButton.disabled = false;
+                submitButton.classList.remove('opacity-50');
+                alert('An error occurred. Please try again.');
+            }
+        };
+    </script>
+</body>
+</html>

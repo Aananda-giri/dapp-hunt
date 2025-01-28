@@ -1,0 +1,7 @@
+aiohttp
+fpdf
+gunicorn
+pymongo
+sanic
+sanic-jinja2
+tldextract

@@ -1,0 +1,144 @@
+<!-- "source.html": """ -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ source }} - Summary</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl">{{ source }}</h1>
+            <a href="{{ pdf_path }}" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 font-bold py-2 px-4 rounded">
+                Download PDF
+            </a>
+            <a href="/"
+               class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 font-bold py-2 px-4 rounded">
+                Home
+            </a>
+        </div>
+        
+        <!-- Summary Section -->
+        <div class="bg-white p-6 rounded shadow mb-8">
+            <h2 class="text-2xl mb-4">Summary</h2>
+            {% for key, value in summary.items() %}
+            <div class="mb-6">
+                <h3 class="font-bold mb-2">{{ key|title }}</h3>
+                <p>{{ value }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        <!-- Chat Interface -->
+        <div class="bg-white p-6 rounded shadow">
+            <h2 class="text-2xl mb-4">Ask Questions</h2>
+            <div id="chat-messages" class="mb-4 h-64 overflow-y-auto">
+                {% for message in chat_history %}
+                <div class="mb-4">
+                        <div class="font-bold">You:</div>
+                        <div>{{message.query}}</div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="font-bold">Response:</div>
+                        <div>{{message.response}}</div>
+                    </div>
+                {% endfor %}
+
+            </div>
+            <form id="chatForm" class="flex gap-4">
+                <input type="text" name="query" class="flex-1 p-2 border rounded" placeholder="Ask a question..." required>
+                <button type="submit" id="submitButton" class="bg-blue-500 text-white px-4 py-2 rounded flex items-center gap-2">
+                    <span>Send</span>
+                    <span id="loadingIndicator" class="hidden">⏳</span>
+                </button>
+            </form>
+        </div>
+
+        <script>
+            document.getElementById('chatForm').onsubmit = async (e) => {
+                e.preventDefault();
+
+                // Get references to the button and loading indicator
+                const submitButton = document.getElementById('submitButton');
+                const loadingIndicator = document.getElementById('loadingIndicator');
+
+                // Disable the button and show the loading indicator
+                submitButton.disabled = true;
+                loadingIndicator.classList.remove('hidden');
+
+                // Get the query
+                const query = e.target.query.value;
+
+                try {
+                    // Send the request
+                    const response = await fetch(`/chat/{{ source }}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query })
+                    });
+
+                    const result = await response.json();
+
+                    // Append the response to the chat messages
+                    const messagesDiv = document.getElementById('chat-messages');
+                    messagesDiv.innerHTML += `
+                        <div class="mb-4">
+                            <div class="font-bold">You:</div>
+                            <div>${query}</div>
+                        </div>
+                        <div class="mb-4">
+                            <div class="font-bold">Response:</div>
+                            <div>${result.response}</div>
+                        </div>
+                    `;
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+                    // Clear the input field
+                    e.target.query.value = '';
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Something went wrong. Please try again.');
+                } finally {
+                    // Re-enable the button and hide the loading indicator
+                    submitButton.disabled = false;
+                    loadingIndicator.classList.add('hidden');
+                }
+            };
+        </script>
+
+        <!-- Chat Interface -->
+        <!-- <div class="bg-white p-6 rounded shadow">
+            <h2 class="text-2xl mb-4">Ask Questions</h2>
+            <div id="chat-messages" class="mb-4 h-64 overflow-y-auto"></div>
+            <form id="chatForm" class="flex gap-4">
+                <input type="text" name="query" class="flex-1 p-2 border rounded" placeholder="Ask a question...">
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Send</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        document.getElementById('chatForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const query = e.target.query.value;
+            const response = await fetch(`/chat/{{ source }}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({query})
+            });
+            const result = await response.json();
+            const messagesDiv = document.getElementById('chat-messages');
+            messagesDiv.innerHTML += `
+                <div class="mb-4">
+                    <div class="font-bold">You:</div>
+                    <div>${query}</div>
+                </div>
+                <div class="mb-4">
+                    <div class="font-bold">Response:</div>
+                    <div>${result.response}</div>
+                </div>
+            `;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            e.target.query.value = '';
+        };
+    </script>-->
+</body>
+</html>
