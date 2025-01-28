@@ -37,6 +37,8 @@ source venv/bin/activate
 ### 4. install playwright (one of these command should work)
 ```
 playwright install
+playwright install-deps
+
 python3 -m playwright install
 python -m playwright install
 ```

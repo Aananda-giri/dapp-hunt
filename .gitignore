@@ -1,2 +1,4 @@
 venv
 .env
+ignore_files/*
+README_PRIVATE.md
