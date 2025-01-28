@@ -9,6 +9,8 @@ from langchain.memory import ConversationBufferWindowMemory
 from langchain.chat_models import ChatOpenAI
 import csv
 from .clean_scrape import extract_clean_text, remove_extra_newlines_and_tabs
+from youtube_transcript_api import YouTubeTranscriptApi
+
 
 import pickle
 
@@ -30,22 +32,31 @@ def framer(news_urls, youtube_urls=None):
         cleaned_text = extract_clean_text(doc.page_content)
         cleaned_text = remove_extra_newlines_and_tabs(cleaned_text)
         doc.page_content = cleaned_text
-
+    print(f'len.docs:{len(docs)}')
     # Load in YouTube videos
     if youtube_urls is not None:
+        print(f'got youtube :{youtube_urls}')
         for video_url in youtube_urls:
             # loader = YoutubeLoader.from_youtube_url(video_url, add_video_info=True)
             loader = YoutubeLoader.from_youtube_url(video_url)  # , add_video_info=True is giving error
+            
+
+            # This langchain loader is not downloading subtitles
+            # --------------------------------------------------
             youtube = loader.load()
             if youtube == []:
                 "Transcript not available for video: " + video_url
             else:
+                print(f'youtube: {youtube}')
                 docs.append(youtube[0])
-
+            # transcripts = YouTubeTranscriptApi.get_transcript(loader.video_id, languages=['en'])
+    else:
+        print("no youtube urls given")
     #Print cleaned texts to ensure they were scraped and cleaned properly
     #print(docs)
     with open('docs.pickle','wb') as f:
         pickle.dump(docs, f)
+    print(f'len.docs2:{len(docs)}')
     return docs
     
 def split_n_generate(product, framework_questions, openai_model, prompt_template):
@@ -75,6 +86,9 @@ def split_n_generate(product, framework_questions, openai_model, prompt_template
     prompt = PromptTemplate(
         input_variables=["chat_history", "human_input", "context"], template=template, partial_variables={"product": product}
     )
+    with open('prompts.pickle','wb') as f:
+        pickle.dump(prompt, f)
+    
     memory = ConversationBufferWindowMemory(k=1, memory_key="chat_history", input_key="human_input")
     chain = load_qa_chain(
         llm, chain_type="stuff", memory=memory, prompt=prompt
