@@ -10,9 +10,9 @@ load_dotenv()
 
 
 class DocumentQA:
-    def __init__(self, api_token: str, mongo_collection, chunk_size: int = 1000, overlap: int = 100):
+    def __init__(self, api_token: str, mongo, chunk_size: int = 1000, overlap: int = 100):
         self.api_token = api_token
-        self.mongo = mongo_collection
+        self.mongo = mongo
         self.chunk_size = chunk_size
         self.overlap = overlap
         self.api_url = "https://api.atoma.network/v1/chat/completions"
@@ -37,6 +37,8 @@ class DocumentQA:
         #     "role": "user", 
         #     "content": message
         # })
+        # with open('query.txt','a') as f:
+        #     f.write(query)
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_token}"
@@ -117,21 +119,21 @@ class DocumentQA:
             all_chunks.extend(chunks)
             
         if all_chunks:
-            self.mongo.insert_many(all_chunks)
+            self.mongo.collection.insert_many(all_chunks)
 
     def search_documents(self, source: str, n: int = 100) -> List[Dict]:
         """
         todo: full text search instead of find
         Search for most relevant documents from a specific source
         """
-        cursor = self.mongo.find(
+        cursor = self.mongo.collection.find(
             {'source': source},
             {'text_content': 1, 'url': 1, '_id': 0}
         ).limit(n)
         
         return list(cursor)
 
-    def query_documents(self, query: str, source: str, n_docs: int = 100) -> str:
+    def query_documents(self, query: str, source: str, n_docs: int = 100, bullet_points:bool = False, feed_message_history:bool=False) -> str:
         """
         Complete pipeline: search documents and query LLM with context
         """
@@ -141,25 +143,28 @@ class DocumentQA:
         # Prepare context from relevant documents
         context = "\n\n".join([doc['text_content'] for doc in relevant_docs])
         
-        # Prepare prompt with context and query
-        prompt = f"""
+        if bullet_points:
+            prompt = f"""\n You are a research-focused chatbot engaging in a conversation with a human. \n\n Your task is to provide professional and detailed answers to questions based strictly on the given context and messages history related to {source}.\n\n If the context or message history does not contain sufficient information to answer the question, clearly inform the user with very short message. Please answers in short bullet points which we can put in bullet points. Please respond with very short one sentence response if Question is actually suggestion or additional information. \n\nBelow is the context: \n\nContext: \n\n{context} \n\n"""
+        else:
+            # Prepare prompt with context and query
+            prompt = f"""\n You are a research-focused chatbot engaging in a conversation with a human. \n\n Your task is to provide professional and detailed answers to questions based strictly on the given context and messages history related to {source}.\n\n If the context or message history does not contain sufficient information to answer the question, clearly inform the user with very short message. \n\nBelow is the context: Please respond with very short one sentence response if Question is actually suggestion or additional information. \n\nContext: \n\n{context} \n\n"""
         
-        You are a research-focused chatbot engaging in a conversation with a human.
+        if feed_message_history:
+            
+            formatted_messages = ''
+            mongo_messages = list(self.mongo.messages_collection.find({'source': source}, {'messages': 1}))
+            for messages in mongo_messages:
+                for message in messages['messages']:
+                    formatted_messages += f'''user: {message['query']} \n assistant: {message['response']} \n\n'''
+            prompt += "Message History: \n\n" + formatted_messages
 
-Your task is to provide professional and detailed answers to questions based strictly on the given context related to {source}.
-
-If the context does not contain sufficient information to answer the question, clearly inform the user with very short message.
-
-Below is the context:
-
-Context:
-{context}
-
-Question: {query}"""
+            # print(f'feeding message history for source:\'{source}\': {formatted_messages[:100]}... mongo_msg:{mongo_messages}')
+        
+        # Add query to the prompt
+        prompt += f"Question: {query}"
         
         # Get LLM response
         return self.query_llm(prompt)
-
 
 if __name__ == "__main__":
     # Example usage:

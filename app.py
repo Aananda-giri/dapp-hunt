@@ -34,7 +34,7 @@ assert ATOMA_BEARER != None, "atoma api key is none"
 # Initialize our DocumentQA system
 qa_system = DocumentQA(
     api_token=ATOMA_BEARER,
-    mongo_collection=mongo.collection,
+    mongo=mongo,
     chunk_size=1000,
     overlap=100
 )
@@ -147,11 +147,13 @@ async def add_source(request):
         answer = qa_system.query_documents(
             query=question,
             source=source,
-            n_docs=15
+            n_docs=15,
+            bullet_points=True,
+            feed_message_history=False
         )
         summaries[q_key] = answer
         print(f': done!')
-    print(f'summaries: {summaries}')
+    # print(f'summaries: {summaries}')
     # Save summary to MongoDB
     summary_doc = {
         "source": source,
@@ -166,6 +168,7 @@ async def add_source(request):
     # /source/{source}
     print(f'redirecting to \"/source/{source}\"')
     return json({"status": "success", "redirect_url":f"/source/{source}"})
+
 
 @app.route("/source/<source>")
 @jinja.template("source.html")
@@ -185,17 +188,82 @@ async def source_page(request, source):
         "pdf_path": f"/download/{source}/summary.pdf"
     }
 
+@app.route("/regenerate_summary", methods=["GET", "POST"])
+async def regenerate_summary(request):
+    if request.method == "GET":
+        return {}
+    
+    # Handle POST request
+    data = request.json
+    source = data.get("source")
+
+    print(f'regenerating summary. source:{source}')
+
+    questions = {}
+    for key, value in qa_system.questions.items():
+        questions[key] = value.format(source=source)
+
+    # print(questions)
+
+    # Generate summaries for each question
+    summaries = {}
+    for q_key, q_template in questions.items():
+        print(f"{q_key}", end='')
+        question = q_template.format(source=source)
+        answer = qa_system.query_documents(
+            query=question,
+            source=source,
+            n_docs=15,
+            bullet_points=True,
+            feed_message_history=True
+        )
+        summaries[q_key] = answer
+        print(f': done!')
+    
+    # print(f'summaries: {summaries}')
+    # Save summary to MongoDB
+    summary_doc = {
+        "source": source,
+        "summaries": summaries,
+        "created_at": datetime.now()
+    }
+    
+    # update if exists, create new otherwise
+    query = {"source": summary_doc["source"]}
+    
+    # Define the update operation
+    update = {
+        "$set": {
+            "summaries": summary_doc["summaries"],
+            "created_at": summary_doc["created_at"]
+        }
+    }
+
+    # Use update_one with upsert=True
+    summary_collection.update_one(query, update, upsert=True)
+    
+    # Generate PDF
+    pdf_path = generate_pdf(source, summaries)
+    
+    # /source/{source}
+    print(f'redirecting to \"/source/{source}\"')
+    return json({"status": "success", "redirect_url":f"/source/{source}"})
+
+
 @app.route("/chat/<source>", methods=["POST"])
 async def chat(request, source):
     """Chat endpoint"""
     data = request.json
     query = data.get("query")
+    print(f'query: {query} \nsource:{source}')
     
     response = qa_system.query_documents(
         query=query,
         source=source,
-        n_docs=15
+        n_docs=100,
+        feed_message_history=True
     )
+    # print(f'response: {response}')
 
     mongo.append_message(source, query, response)
     

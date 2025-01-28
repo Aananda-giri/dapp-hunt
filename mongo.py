@@ -48,6 +48,9 @@ class Mongo():
         # message_collection
         self.messages_collection = self.db.messages
         self.messages_collection.create_index('source', unique=True)
+
+        self.summary_collection = self.db.summaries
+        self.summary_collection.create_index('source', unique=True)
     
     def ping(self):
         # Send a ping to confirm a successful connection
