@@ -40,10 +40,6 @@ qa_system = DocumentQA(
 )
 
 
-
-# MongoDB collections for summaries
-summary_collection = mongo.db.summaries
-
 # url = "https://example.com"
 # asyncio.run(crawl_text_content(url))
 
@@ -98,7 +94,7 @@ def generate_pdf(source: str, qa_results: Dict[str, str]) -> str:
 @jinja.template("home.html")
 async def home(request):
     """Home page listing all sources"""
-    sources = summary_collection.distinct("source")
+    sources = mongo.summary_collection.distinct("source")
     return {"sources": sources}
 
 @app.route("/add_source", methods=["GET", "POST"])
@@ -160,7 +156,7 @@ async def add_source(request):
         "summaries": summaries,
         "created_at": datetime.now()
     }
-    summary_collection.insert_one(summary_doc)
+    mongo.summary_collection.insert_one(summary_doc)
     
     # Generate PDF
     pdf_path = generate_pdf(source, summaries)
@@ -174,7 +170,7 @@ async def add_source(request):
 @jinja.template("source.html")
 async def source_page(request, source):
     """Individual source page"""
-    summary = summary_collection.find_one({"source": source})
+    summary = mongo.summary_collection.find_one({"source": source})
     chat_history = mongo.messages_collection.find({'source':source})
     
     # Iterate through the cursor to get each document
@@ -240,7 +236,7 @@ async def regenerate_summary(request):
     }
 
     # Use update_one with upsert=True
-    summary_collection.update_one(query, update, upsert=True)
+    mongo.summary_collection.update_one(query, update, upsert=True)
     
     # Generate PDF
     pdf_path = generate_pdf(source, summaries)
@@ -280,6 +276,18 @@ async def download_pdf(request, source):
     
     latest_pdf = sorted(pdf_files)[-1]
     return await file(f'summaries/{latest_pdf}')
+
+@app.post("/update_summary")
+async def update_text(request):
+    data = request.json
+    title = data.get("title")
+    text = data.get("text")
+    source = data.get("source")
+    print(f'title: {title} \n text: {text[:100]} \nsource:{source}')
+    
+    mongo.update_summary(source, title, text)
+    
+    return response.json({"status": "success"})
 
 if __name__ == "__main__":
     os.makedirs('summaries', exist_ok=True)

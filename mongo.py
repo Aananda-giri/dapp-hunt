@@ -115,6 +115,31 @@ class Mongo():
         # list(messages_collection.find({}))
     def exists(self, source):
         return self.collection.find_one({'source':source})
+    
+    def update_summary(self, source:str, title:str, new_text:str):
+        try:
+            full_document = self.summary_collection.find_one({'source' : source})
+
+            all_summaries = full_document['summaries']
+
+            # update summary of specific topic
+            all_summaries[title.lower()] = new_text
+
+            # update if exists, create new otherwise
+            query = {"source": source}
+
+            # Define the update operation
+            update = {
+                "$set": {
+                    "summaries": all_summaries,
+                    "created_at": datetime.now()
+                }
+            }
+
+            # Use update_one with upsert=True
+            self.summary_collection.update_one(query, update, upsert=True)
+        except Exception as e:
+            print(f' failed to update summary for {source} with title: {title} and new_text: {new_text[:50]}...\n error:{e}')
 if __name__=="__main__":
     # delete all data and create unique index for field: 'url'
     mongo = Mongo()
