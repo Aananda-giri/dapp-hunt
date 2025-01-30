@@ -7,22 +7,22 @@
 </head>
 <body class="bg-gray-100 p-8">
     <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl mb-8">Available Sources</h1>
+        <div class="max-w-4xl mx-auto">
+
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">Available Sources</h1>
+        
         <a href="/add_source" class="mt-8 mb-8 inline-block bg-gray-500 text-white px-4 py-2 rounded">
             Add New Source
         </a>
         
-        <!-- <a href="/add_source" class="mt-8 mb-8 inline-block bg-blue-500 text-white px-4 py-2 rounded">
-            Add New Source
-        </a> -->
         <div class="grid gap-4">
             {% for source in sources %}
-            <a href="/source/{{ source }}" class="bg-white p-4 rounded shadow hover:shadow-lg transition">
-                {{ source }}
+            <a href="/source/{{ source.source }}" class="block bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition border border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">{{ source.source }}</h2>
+                <p class="text-sm text-gray-600">{{ source.tagline }}</p>
             </a>
             {% endfor %}
         </div>
-        
     </div>
 </body>
 </html>

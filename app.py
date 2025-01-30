@@ -94,7 +94,11 @@ def generate_pdf(source: str, qa_results: Dict[str, str]) -> str:
 @jinja.template("home.html")
 async def home(request):
     """Home page listing all sources"""
-    sources = mongo.summary_collection.distinct("source")
+    # sources = mongo.summary_collection.distinct("source")
+    sources = list(mongo.summary_collection.aggregate([
+            {"$group": {"_id": "$source", "tagline": {"$first": "$tagline"}}},
+            {"$project": {"_id": 0, "source": "$_id", "tagline": 1}}
+        ]))
     return {"sources": sources}
 
 @app.route("/add_source", methods=["GET", "POST"])
@@ -149,11 +153,17 @@ async def add_source(request):
         )
         summaries[q_key] = answer
         print(f': done!')
+
+        tagline_prompt = "please provide a short, one sentence tagline strictly based on following information: "
+        for key, value in summaries.items():
+            tagline_prompt += f'\n\n ## {key}: \n{value}'
+        tagline = qa_system.query_llm(tagline_prompt)
     # print(f'summaries: {summaries}')
     # Save summary to MongoDB
     summary_doc = {
         "source": source,
         "summaries": summaries,
+        "tagline":tagline,
         "created_at": datetime.now()
     }
     mongo.summary_collection.insert_one(summary_doc)

@@ -28,7 +28,7 @@ class DocumentQA:
             "revenue": "How does {source} generate revenue?"
         }
 
-    def query_llm(self, query: str, max_tokens: int = 128) -> str:
+    def query_llm(self, query: str, max_tokens: int = 500) -> str:
         """
         Send a query to the LLM API and return the response
         """
