@@ -18,36 +18,6 @@ mongoose.connect(MONGO_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-// // Character Schema
-// const characterSchema = new mongoose.Schema({
-//   name: {
-//     type: String,
-//     required: true,
-//     unique: true
-//   },
-//   clients: [{
-//     type: String
-//   }],
-//   modelProvider: {
-//     type: String,
-//     required: true
-//   },
-//   settings: {
-//     secrets: {
-//       type: Map,
-//       of: String,
-//       default: {}
-//     },
-//     voice: {
-//       model: {
-//         type: String
-//       }
-//     }
-//   },
-//   plugins: [{
-//     type: String
-//   }]
-// });
 
 // Flexible Character Schema - allows any fields
 const characterSchema = new mongoose.Schema({}, { 
@@ -77,7 +47,48 @@ app.post('/api/characters', async (req, res) => {
   }
 });
 
-// 1.5 Delete character from mongo <todo>
+/*
+// 2. Update character from mongo: (find character with specific name in mongo and update the character-data)
+// ---------------------------------------
+
+* Return 400 if no name is provided
+* Return 404 if no character with that name exists
+* Return 500 if there's a server error
+* Return 200 with the updated character data on success
+*/
+
+// PUT endpoint to update a character by name
+app.post('/api/characters/update', async (req, res) => {
+  try {
+    const characterData = req.body;
+    
+    // Ensure name is provided in the request body
+    if (!characterData.name) {
+      return res.status(400).json({ error: 'Character name is required' });
+    }
+
+    // Find and update the character
+    const updatedCharacter = await Character.findOneAndUpdate(
+      { name: characterData.name }, // find by name
+      characterData,                // update with new data
+      { 
+        new: true,                 // return updated document
+        runValidators: true        // run schema validators on update
+      }
+    );
+
+    // If no character was found with that name
+    if (!updatedCharacter) {
+      return res.status(404).json({ error: 'Character not found' });
+    }
+
+    res.json(updatedCharacter);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 3. Delete character from mongo <todo>
 // ---------------------------------------
 
 // DELETE endpoint to remove a character by name
@@ -97,7 +108,7 @@ app.delete('/api/characters/:name', async (req, res) => {
   }
 });
 
-// 2. Get character data from mongo
+// 4. Get character data from mongo
 // ---------------------------------
 
 // GET endpoint to retrieve characters
@@ -127,7 +138,7 @@ app.get('/api/characters', async (req, res) => {
 
 /*
 // -------------------
-// 3. Run characters
+//5. Run characters
 // -------------------
 
 Working:
@@ -135,7 +146,7 @@ Working:
 * get list of character names from api request
 * get complete configs of character from mongo and save to individual files: characters/<character-name>.character.json
 * stop previous child process if there is one
-* run new child process in background: e.g. `pnpm start --characters="characters/doby_new.character.json"`;
+* run new child process in background: e.g. `pnpm start --characters="characters/doby_new.character.json`;
 *  Save run logs to `logs/` folder
 
 */
@@ -218,6 +229,7 @@ app.post('/api/characters/run', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // --------------------------
 // Error handling middleware
