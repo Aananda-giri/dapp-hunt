@@ -2,16 +2,6 @@
 
 ## Features
 
-- use ATOMA
-- create/delete characters
-- run character
-- save character to mongo
-- reply to tweets (when mentioned or when someone comments to character's twitter handle)
-
-# Express.js App for the Eliza Client
-
-## Features
-
 - [x] Create and delete characters
 - [x] Run a character
 - [x] Save characters to MongoDB
@@ -22,6 +12,14 @@
 
 - [ ] post new tweets
 - [ ] eliza prompt engineering (compose context)
+
+## Ports Overview
+
+The application consists of multiple services running on different ports:
+
+- **Frontend (React + Vite + TypeScript)** runs on port **5100**: [http://localhost:5100](http://localhost:5100)
+- **Backend (Express.js)** runs on port **5000**: [http://localhost:5000](http://localhost:5000)
+- **ElizaOS** runs on port **3000**: [http://localhost:3000](http://localhost:3000)
 
 ---
 
