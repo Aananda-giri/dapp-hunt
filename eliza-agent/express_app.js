@@ -18,6 +18,18 @@ mongoose.connect(MONGO_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
 
+// allow cross origin requests
+const cors = require('cors');
+app.use(cors());
+
+
+// show index.html for any routes that has not been defined explicitly in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static('frontend/dist'));
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, 'frontend', 'dist', 'index.html'));
+  });
+}
 
 // Flexible Character Schema - allows any fields
 const characterSchema = new mongoose.Schema({}, { 
@@ -38,6 +50,8 @@ app.post('/api/characters', async (req, res) => {
     const character = new Character(characterData);
     const savedCharacter = await character.save();
     res.status(201).json(savedCharacter);
+
+    console.log(`new character data: {characterData}`, characterData);
   } catch (error) {
     if (error.code === 11000) { // Duplicate key error
       res.status(400).json({ error: 'Character with this name already exists' });
@@ -128,6 +142,12 @@ app.get('/api/characters', async (req, res) => {
     });
 
     const characters = await Character.find(query);
+    
+    // If the query key is 'name', return only the first character
+    if (req.query.name) {
+      return res.json(characters[0] || null);
+    }
+
     res.json(characters);
   } catch (error) {
     res.status(500).json({ error: error.message });
