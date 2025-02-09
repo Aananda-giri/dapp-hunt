@@ -3,11 +3,14 @@ import json
 from typing import List, Dict, Optional
 from pymongo import MongoClient
 
+from atoma_sdk import AtomaSDK
+
 from dotenv import load_dotenv
 import os
 load_dotenv()
 
 
+assert os.environ.get('ATOMA_BEARER') != None
 
 class DocumentQA:
     def __init__(self, api_token: str, mongo, chunk_size: int = 1000, overlap: int = 100):
@@ -28,10 +31,38 @@ class DocumentQA:
             "revenue": "How does {source} generate revenue?"
         }
 
-    def query_llm(self, query: str, max_tokens: int = 500) -> str:
+    def query_llm(self, query: str, max_tokens: int = 500, use_r1=False, include_thinking_text=False) -> str:
         """
         Send a query to the LLM API and return the response
         """
+        # query using deepseek r1 model
+        #---------------------------
+        if use_r1:
+            print(f'using r1 model')
+            try:
+                with AtomaSDK(
+                    bearer_auth=os.environ.get('ATOMA_BEARER'),
+                ) as atoma_sdk:
+                    res = atoma_sdk.chat.create(messages=[
+                        {
+                            "content": query,
+                            "role": "user",
+                        },
+                    ], model="deepseek-ai/DeepSeek-R1", frequency_penalty=0, max_tokens=2048, n=1, presence_penalty=0, seed=123, stop=[
+                        "json([\"stop\", \"halt\"])",
+                    ], temperature=0.7, top_p=1, user="user-1234")
+                    # Handle response
+                    if include_thinking_text:
+                        return res.choices[0].message.content
+                    else:
+                        return res.choices[0].message.content.split('</think>')[-1].strip()
+            except Exception as ex:
+                print(f' error query llm: {ex}')
+                return f"error query llm: {ex}"
+        print(f'using llama3 model')
+        # query using llama3 model
+        #---------------------------
+
         # # Add current message to conversation history
         # self.conversation_history.append({
         #     "role": "user", 
@@ -133,7 +164,7 @@ class DocumentQA:
         
         return list(cursor)
 
-    def query_documents(self, query: str, source: str, n_docs: int = 100, bullet_points:bool = False, feed_message_history:bool=False) -> str:
+    def query_documents(self, query: str, source: str, n_docs: int = 100, bullet_points:bool = False, feed_message_history:bool=False, use_r1=False) -> str:
         """
         Complete pipeline: search documents and query LLM with context
         """
@@ -144,10 +175,10 @@ class DocumentQA:
         context = "\n\n".join([doc['text_content'] for doc in relevant_docs])
         
         if bullet_points:
-            prompt = f"""please give very short response (not more than few sentences) You are a research-focused chatbot engaging in a conversation with a human. \n\n Your task is to provide professional and detailed answers to questions based strictly on the given context and messages history related to {source}.\n\n If the context or message history does not contain sufficient information to answer the question, clearly inform the user with very short message. Please answers in short bullet points which we can put in bullet points. Please respond with very short one sentence response if Question is actually suggestion or additional information. \n\nBelow is the context: \n\nContext: \n\n{context} \n\n"""
+            prompt = f"""please give very short response (not more than few sentences) You are a research-focused chatbot engaging in a conversation with a human. \n\n Your task is to provide professional and detailed answers to questions based strictly on the given context and messages history related to {source}.\n\n If the context or message history does not contain sufficient information to answer the question, clearly inform the user with very short message. Feel free to use the information user has provided in previous chat for answering new questions. Please answers in short bullet points which we can put in bullet points. Please respond with very short one sentence response if Question is actually suggestion or additional information. \n\nBelow is the context: \n\nContext: \n\n{context} \n\n"""
         else:
             # Prepare prompt with context and query
-            prompt = f"""\n You are a research-focused chatbot engaging in a conversation with a human. \n\n Your task is to provide professional and detailed answers to questions based strictly on the given context and messages history related to {source}.\n\n If the context or message history does not contain sufficient information to answer the question, clearly inform the user with very short message. \n\nBelow is the context: Please respond with very short one sentence response if Question is actually suggestion or additional information. \n\nContext: \n\n{context} \n\n"""
+            prompt = f"""\n You are a research-focused chatbot engaging in a conversation with a human. \n\n Your task is to provide professional and detailed answers to questions based on the given context and messages history related to {source}.\n\n If the context or message history does not contain sufficient information to answer the question, clearly inform the user with very short message. Feel free to use the information user has provided in previous chat for answering new questions.\n\n Below is the context: Please respond with very short one sentence response if Question is actually suggestion or additional information. \n\nContext: \n\n{context} \n\n"""
         
         if feed_message_history:
             
@@ -164,7 +195,7 @@ class DocumentQA:
         prompt += f"Question: {query}"
         
         # Get LLM response
-        return self.query_llm(prompt)
+        return self.query_llm(prompt, use_r1=use_r1)
 
 if __name__ == "__main__":
     # Example usage:
