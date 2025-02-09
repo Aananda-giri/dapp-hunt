@@ -49,6 +49,9 @@ class Mongo():
         self.messages_collection = self.db.messages
         self.messages_collection.create_index('source', unique=True)
 
+        self.brainstrom_collection = self.db.brainstrom
+        self.brainstrom_collection.create_index('source', unique=True)
+
         self.summary_collection = self.db.summaries
         self.summary_collection.create_index('source', unique=True)
     
@@ -103,6 +106,30 @@ class Mongo():
 
         # Add the new message to the 'messages' array for the specific source
         result = self.messages_collection.update_one(
+            {"source": source},  # Filter by source
+            {"$push": {"messages": new_message}},  # Add the new message to the array
+            upsert=True  # Create a document if it doesn't exist
+        )
+
+        if result.upserted_id:
+            print(f"New document created with ID: {result.upserted_id}")
+        else:
+            print("Document updated successfully.")
+        # list(messages_collection.find({}))
+    def append_brainstrom_message(self, source, query, response):
+        
+        '''
+            * append new message to existinig message_collection
+        '''
+        new_message = {
+            "query": query,
+            "response": response,
+            "timestamp": datetime.now(),
+            "source": source
+        }
+
+        # Add the new message to the 'messages' array for the specific source
+        result = self.brainstrom_collection.update_one(
             {"source": source},  # Filter by source
             {"$push": {"messages": new_message}},  # Add the new message to the array
             upsert=True  # Create a document if it doesn't exist
