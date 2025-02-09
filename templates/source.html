@@ -4,8 +4,40 @@
 <head>
     <title>{{ source }} - Summary</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- to display in markdowwn format  -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body class="bg-gray-100 p-8">
+    <!-- Add these styles to your CSS -->
+<style>
+    /* Handle markdown content overflow */
+    .markdown-content {
+        max-width: 100%;
+        overflow-x: auto;
+    }
+    
+    /* Make tables responsive */
+    .markdown-content table {
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    /* Handle code blocks overflow */
+    .markdown-content pre {
+        max-width: 100%;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    
+    /* Ensure images don't overflow */
+    .markdown-content img {
+        max-width: 100%;
+        height: auto;
+    }
+    </style>
     <div id="spinner-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center z-50 text-white text-lg font-bold">
         Regenerating summary (might take 1-2 minutes)
         <div class="w-16 h-16 mt-4 border-4 border-t-4 border-t-transparent border-white rounded-full animate-spin"></div>
@@ -179,6 +211,12 @@
         <!-- Chat Interface -->
         <div class="bg-white p-6 rounded shadow">
             <h2 class="text-3xl font-bold mb-6 text-gray-900 border-b-2 pb-2">Ask Questions</h2>
+            <select name="model" id="model_selector" class="p-2 mb-8 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="brainstrom-r1">brainstrom-r1</option>
+                <option value="brainstrom-llama3-70B">brainstrom-llama3-70B</option>
+                <option value="chat-llama3-70B">chat-llama3-70B</option>
+                <option value="chat-r1">chat-r1</option>
+            </select>
 
             <div id="chat-messages" class="mb-4 h-64 overflow-y-auto p-4 bg-gray-100 rounded shadow-inner">
                 {% for message in chat_history %}
@@ -188,12 +226,14 @@
                 </div>
                 <div class="mb-4 p-3 rounded-lg bg-gray-200 shadow">
                     <div class="font-bold text-green-600">Response:</div>
-                    <div class="text-gray-800">{{ message.response }}</div>
+                    <div class="markdown-content text-gray-800">{{ message.response }}</div>
                 </div>
                 {% endfor %}
             </div>
 
             <form id="chatForm" class="flex gap-4">
+                
+
                 <input type="text" name="query" class="flex-1 p-2 border border-gray-300 rounded" placeholder="Ask a question..." required>
                 <button type="submit" id="submitButton" class="bg-blue-500 text-white px-4 py-2 rounded flex items-center gap-2">
                     <span>Send</span>
@@ -206,6 +246,7 @@
         
         // give them different colours
         document.addEventListener("DOMContentLoaded", function () {
+            // Get all elements with class 'markdown-content'
             const colors = [
                 "bg-red-100", "bg-blue-100", "bg-green-100", 
                 "bg-yellow-100", "bg-pink-100", "bg-purple-100", 
@@ -214,7 +255,24 @@
             document.querySelectorAll(".sticky-note").forEach((note, index) => {
                 note.classList.add(colors[index % colors.length]); // Assign color in a cycle
             });
+            
         });
+
+            function convertMarkdownContent() {
+                // Select all elements with the class 'markdown-content'
+                const mdElements = document.querySelectorAll('.markdown-content');
+                
+                // Loop through each element and convert its markdown to HTML
+                mdElements.forEach(mdElement => {
+                    const mdText = mdElement.textContent; // Get raw markdown text
+                    const htmlContent = marked.parse(mdText); // Convert markdown to HTML
+                    mdElement.innerHTML = htmlContent; // Replace markdown with HTML
+                });
+                }
+                convertMarkdownContent();
+
+            // Call the function once the DOM is fully loaded
+            // document.addEventListener('DOMContentLoaded', convertMarkdownContent);
 
 
             document.getElementById('chatForm').onsubmit = async (e) => {
@@ -230,13 +288,20 @@
 
                 // Get the query
                 const query = e.target.query.value;
+                
+                // Get the selected model
+                const selectedModel = document.getElementById('model_selector').value;
+                console.log('model', selectedModel);
 
                 try {
                     // Send the request
                     const response = await fetch(`/chat/{{ source }}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ query })
+                        body: JSON.stringify({
+                             query:query,
+                             model: selectedModel
+                        })
                     });
 
                     // console.log('response', response);
@@ -252,13 +317,16 @@
                     </div>
                     <div class="mb-4 p-3 rounded-lg bg-gray-200 shadow">
                         <div class="font-bold text-green-600">Response:</div>
-                        <div class="text-gray-800">${result.response}</div>
+                        <div class=" markdown-content text-gray-800">${result.response}</div>
                     </div>
                     `;
                     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
                     // Clear the input field
                     e.target.query.value = '';
+
+                    // format markdown content
+                    convertMarkdownContent();
                 } catch (error) {
                     console.error('Error:', error);
                     alert('Something went wrong. Please try again.');
@@ -309,7 +377,97 @@
                     spinnerOverlay.classList.remove('flex');
                 }
             }
+        
+        // model change action
+        const modelSelect = document.getElementById('model_selector');
+        const chatMessagesDiv = document.getElementById('chat-messages');
 
+        // Listen for changes on the dropdown
+        modelSelect.addEventListener('change', function() {
+            const selectedModel = modelSelect.value;
+
+            // Extract the source from the URL.
+            // Assuming URL format: http://0.0.0.0:5000/source/uniswap2 => source is "uniswap2"
+            const pathParts = window.location.pathname.split('/');
+            const source = pathParts[pathParts.length - 1];
+
+            // Prepare the payload with the new model and source
+            const payload = {
+            model: selectedModel,
+            source: source
+            };
+
+            // Send a POST request to the backend at '/model_change'
+            fetch('/model_change', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+            })
+            .then(response => {
+            if (!response.ok) {
+                console.log('response', response);
+                throw new Error('Network response not OK');
+                
+            }
+            return response.json();
+            })
+            .then(data => {
+            // Check if the response contains new messages
+            if (data.messages && data.messages.length > 0) {
+                // Clear the current chat messages
+                chatMessagesDiv.innerHTML = '';
+
+                // Loop through each message and create new elements
+                data.messages.forEach(message => {
+                // Create container for user query
+                const queryContainer = document.createElement('div');
+                queryContainer.className = 'mb-4 p-3 rounded-lg bg-white shadow';
+                
+                const queryLabel = document.createElement('div');
+                queryLabel.className = 'font-bold text-blue-600';
+                queryLabel.textContent = 'You:';
+                
+                const queryContent = document.createElement('div');
+                // Mark as markdown content so it gets converted later
+                queryContent.className = 'text-gray-800';
+                queryContent.textContent = message.query;
+                
+                queryContainer.appendChild(queryLabel);
+                queryContainer.appendChild(queryContent);
+                
+                // Create container for response
+                const responseContainer = document.createElement('div');
+                responseContainer.className = 'mb-4 p-3 rounded-lg bg-gray-200 shadow';
+                
+                const responseLabel = document.createElement('div');
+                responseLabel.className = 'font-bold text-green-600';
+                responseLabel.textContent = 'Response:';
+                
+                const responseContent = document.createElement('div');
+                responseContent.className = 'markdown-content text-gray-800';
+                responseContent.textContent = message.response;
+                
+                responseContainer.appendChild(responseLabel);
+                responseContainer.appendChild(responseContent);
+                
+                // Append the query and response containers to the chat messages div
+                chatMessagesDiv.appendChild(queryContainer);
+                chatMessagesDiv.appendChild(responseContainer);
+                });
+
+                // Convert markdown content in the new messages to HTML
+                convertMarkdownContent();
+            } else {
+                console.log('No new messages returned from the backend.');
+            }
+            })
+            .catch(error => {
+            console.error('Error during model change:', error);
+            });
+        });
+        // convertMarkdownContent();
         </script>
 
         <!-- Chat Interface -->
