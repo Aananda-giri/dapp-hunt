@@ -3,7 +3,9 @@ import json
 from typing import List, Dict, Optional
 from pymongo import MongoClient
 
+from a16z.brainstrom_prompt import get_brainstrom_prompt
 from atoma_sdk import AtomaSDK
+
 
 from dotenv import load_dotenv
 import os
@@ -35,6 +37,8 @@ class DocumentQA:
         """
         Send a query to the LLM API and return the response
         """
+        # with open('prompt.txt','w') as f:
+        #     f.write(query)
         # query using deepseek r1 model
         #---------------------------
         if use_r1:
@@ -164,7 +168,7 @@ class DocumentQA:
         
         return list(cursor)
 
-    def query_documents(self, query: str, source: str, n_docs: int = 100, bullet_points:bool = False, feed_message_history:bool=False, use_r1=False) -> str:
+    def query_documents(self, query: str, source: str, n_docs: int = 100, bullet_points:bool = False, feed_message_history:bool=False, brainstrom=False, use_r1=False) -> str:
         """
         Complete pipeline: search documents and query LLM with context
         """
@@ -174,7 +178,10 @@ class DocumentQA:
         # Prepare context from relevant documents
         context = "\n\n".join([doc['text_content'] for doc in relevant_docs])
         
-        if bullet_points:
+        if brainstrom:
+            prompt = get_brainstrom_prompt(source, context)
+        
+        elif bullet_points:
             prompt = f"""please give very short response (not more than few sentences) You are a research-focused chatbot engaging in a conversation with a human. \n\n Your task is to provide professional and detailed answers to questions based strictly on the given context and messages history related to {source}.\n\n If the context or message history does not contain sufficient information to answer the question, clearly inform the user with very short message. Feel free to use the information user has provided in previous chat for answering new questions. Please answers in short bullet points which we can put in bullet points. Please respond with very short one sentence response if Question is actually suggestion or additional information. \n\nBelow is the context: \n\nContext: \n\n{context} \n\n"""
         else:
             # Prepare prompt with context and query
@@ -183,16 +190,19 @@ class DocumentQA:
         if feed_message_history:
             
             formatted_messages = ''
-            mongo_messages = list(self.mongo.messages_collection.find({'source': source}, {'messages': 1}))
+            if brainstrom:
+                mongo_messages = list(self.mongo.brainstrom_collection.find({'source': source}, {'messages': 1}))
+            else:
+                mongo_messages = list(self.mongo.messages_collection.find({'source': source}, {'messages': 1}))
             for messages in mongo_messages:
                 for message in messages['messages']:
                     formatted_messages += f'''user: {message['query']} \n assistant: {message['response']} \n\n'''
-            prompt += "Message History: \n\n" + formatted_messages
+            prompt += "## previous Messages: \n\n" + formatted_messages
 
             # print(f'feeding message history for source:\'{source}\': {formatted_messages[:100]}... mongo_msg:{mongo_messages}')
         
         # Add query to the prompt
-        prompt += f"Question: {query}"
+        prompt += f"\n\n user: {query}"
         
         # Get LLM response
         return self.query_llm(prompt, use_r1=use_r1)

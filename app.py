@@ -181,7 +181,7 @@ async def add_source(request):
 async def source_page(request, source):
     """Individual source page"""
     summary = mongo.summary_collection.find_one({"source": source})
-    chat_history = mongo.messages_collection.find({'source':source})
+    chat_history = mongo.brainstrom_collection.find({'source':source})
     
     # Iterate through the cursor to get each document
     messages = []
@@ -260,22 +260,112 @@ async def regenerate_summary(request):
 async def chat(request, source):
     """Chat endpoint"""
     data = request.json
+    # print(f'data:{data}')
     query = data.get("query")
-    print(f'query: {query} \nsource:{source}')
-    
-    response = qa_system.query_documents(
-        query=query,
-        source=source,
-        n_docs=100,
-        feed_message_history=True
-    )
-    # print(f'response: {response}')
+    model = data.get("model")
+    print(f'data:{data} \n model: {model} \nsource:{source}')
 
-    mongo.append_message(source, query, response)
+    if model and model.startswith('brainstrom'):
+        # brainstrom with model
+        # ---------------------
+        use_r1=False
+        if model.endswith('-r1'):
+            use_r1=True
+        
+        response = qa_system.query_documents(
+            query=query,
+            source=source,
+            n_docs=100,
+            feed_message_history=True,
+            brainstrom=True,    # Added for brainstroming (False by default)
+            use_r1=use_r1   # whether or not use r1 model
+        )
+        # print(f'response: {response}')
+        mongo.append_brainstrom_message(source, query, response)
+    else:
+        # chat model
+        # -----------
+
+        use_r1=False
+        if model and model.endswith('-r1'):
+            use_r1=True
+        response = qa_system.query_documents(
+            query=query,
+            source=source,
+            n_docs=100,
+            feed_message_history=True,
+            use_r1=use_r1
+        )
+        # print(f'response: {response}')
+
+        mongo.append_message(source, query, response)
     
     print(f' query: {query}\n response: {response}')
     return json({"response": response})
 
+@app.route("/model_change", methods=["GET", "POST"])
+async def model_change(request):
+    # Parse JSON data from the request
+    data = request.json
+    if not data:
+        return json({"status": "error", "message": "No data provided"}, status=400)
+    try:
+
+        # Extract new model name and source from the payload
+        model_name = data.get("model")
+        source = data.get("source")
+        print(f' model change \n model_name: {model_name}\n source:{source} ')
+
+        if model_name.startswith('chat'):
+            print('chat model')
+            # chat messeges
+            chat_history = mongo.messages_collection.find({'source':source})
+        
+            # Iterate through the cursor to get each document
+            messages = []
+            for message in chat_history:
+                messages.extend(message['messages'])
+            # to solve error: datetime.datetime(2025, 1, 28, 16, 10, 58, 583000) is not JSON serializable
+            messages_new = []
+            for message in messages:
+                message['timestamp'] = str(message['timestamp'])
+                messages_new.append({
+                    'query':message['query'],
+                    'response':message['response']
+                })
+            messages = messages_new
+        else:
+            print('brainstrom model')
+            # brainstrom messages
+            chat_history = mongo.brainstrom_collection.find({'source':source})
+        
+            # Iterate through the cursor to get each document
+            messages = []
+            for message in chat_history:
+                print(f' \n\n message: {messages}')
+                messages.extend(message['messages'])
+
+            
+            # to solve error: datetime.datetime(2025, 1, 28, 16, 10, 58, 583000) is not JSON serializable
+            messages_new = []
+            for message in messages:
+                message['timestamp'] = str(message['timestamp'])
+                messages_new.append({
+                    'query':message['query'],
+                    'response':message['response']
+                })
+            messages = messages_new
+        if not model_name or not source:
+            print(f'\n\n error1')
+            return json({"status": "error", "message": "Missing model or source"}, status=400)
+        print(f'messages:{messages}')
+        # Return the result as JSON.
+        print(f'\n\n normal return')
+        return json({"status": "success", "messages": messages}, status=200)
+    except Exception as ex:
+        print(f'error2: {ex}')
+        return json({"status": f"error: {ex}", "message": "No data provided"}, status=400)
+    
 @app.route("/download/<source>/summary.pdf")
 async def download_pdf(request, source):
     """Download PDF endpoint"""
