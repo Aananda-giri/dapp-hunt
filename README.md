@@ -1,6 +1,6 @@
 # Dapp-Hunt
 
-* [Live Demo](http://54.153.4.11:5000)
+- [Live Demo](http://13.57.248.134:5000/)
 
 ---
 
@@ -34,6 +34,7 @@ venv\Scripts\activate
 ```
 
 > If the above commands do not activate the environment, try one of the following:
+>
 > ```
 > .\venv\Scripts\Activate
 > source venv/Scripts/activate
@@ -72,8 +73,7 @@ Open your browser and visit:
 
 ---
 
-* Alternatively, for running in background (ubuntu):
-
+- Alternatively, for running in background (ubuntu):
 
 ```
 [Unit]
@@ -93,12 +93,14 @@ WantedBy=multi-user.target
 ```
 
 2. Enable and start the service:
+
 ```bash
 sudo systemctl enable app
 sudo systemctl start app
 ```
 
 3. Basic commands to manage your app:
+
 ```bash
 # Check status
 sudo systemctl status app
@@ -111,6 +113,7 @@ sudo journalctl -u app
 ```
 
 This will:
+
 - Keep your app running even after SSH session ends
 - Automatically restart it if it crashes or terminates
 - Provide basic logging
@@ -125,5 +128,3 @@ This will:
 ---
 
 Happy coding!
-
-
