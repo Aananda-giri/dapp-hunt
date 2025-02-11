@@ -37,8 +37,10 @@ class DocumentQA:
         """
         Send a query to the LLM API and return the response
         """
-        # with open('prompt.txt','w') as f:
-        #     f.write(query)
+        with open('prompt.txt','w') as f:
+            f.write(query)
+
+        print(f'query: {query}')
         # query using deepseek r1 model
         #---------------------------
         if use_r1:
@@ -52,7 +54,7 @@ class DocumentQA:
                             "content": query,
                             "role": "user",
                         },
-                    ], model="deepseek-ai/DeepSeek-R1", frequency_penalty=0, max_tokens=2048, n=1, presence_penalty=0, seed=123, stop=[
+                    ], model="deepseek-ai/DeepSeek-R1", frequency_penalty=0, max_tokens=10000, n=1, presence_penalty=0, seed=123, stop=[
                         "json([\"stop\", \"halt\"])",
                     ], temperature=0.7, top_p=1, user="user-1234")
                     # Handle response
@@ -168,8 +170,8 @@ class DocumentQA:
         
         return list(cursor)
 
-    def query_documents(self, query: str, source: str, n_docs: int = 100, bullet_points:bool = False, feed_message_history:bool=False, brainstrom=False, use_r1=False) -> str:
-        """
+    def query_documents(self, query: str, source: str, n_docs: int = 100, bullet_points:bool = False, feed_message_history:bool=False, summary={}, brainstrom=False, use_r1=False) -> str:
+        """# Added for brainstroming (False by default)
         Complete pipeline: search documents and query LLM with context
         """
         # Get relevant documents
@@ -200,7 +202,12 @@ class DocumentQA:
             prompt += "## previous Messages: \n\n" + formatted_messages
 
             # print(f'feeding message history for source:\'{source}\': {formatted_messages[:100]}... mongo_msg:{mongo_messages}')
-        
+        if summary:
+            prompt += "\n\n ## summary:\n Here is the summary you have previously generated: \n\n" 
+            summary_str = ''
+            for key, value in summary.items():
+                summary_str += '### key: \n ' + value
+            prompt += summary_str
         # Add query to the prompt
         prompt += f"\n\n user: {query}"
         

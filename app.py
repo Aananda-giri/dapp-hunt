@@ -149,7 +149,8 @@ async def add_source(request):
             source=source,
             n_docs=15,
             bullet_points=True,
-            feed_message_history=False
+            feed_message_history=False,
+            use_r1=True   # Use deepseek-r1 model
         )
         summaries[q_key] = answer
         print(f': done!')
@@ -187,6 +188,7 @@ async def source_page(request, source):
     messages = []
     for message in chat_history:
         messages.extend(message['messages'])
+    
     return {
         "source": source,
         "summary": summary["summaries"] if summary else {},
@@ -272,11 +274,15 @@ async def chat(request, source):
         if model.endswith('-r1'):
             use_r1=True
         
+        summary = mongo.summary_collection.find_one({"source": source})
+        summary = summary["summaries"] if summary else {}
+
         response = qa_system.query_documents(
             query=query,
             source=source,
             n_docs=100,
             feed_message_history=True,
+            summary=summary,
             brainstrom=True,    # Added for brainstroming (False by default)
             use_r1=use_r1   # whether or not use r1 model
         )
