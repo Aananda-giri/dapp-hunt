@@ -88,6 +88,7 @@ pnpm run dev
 
 - [ ] Summarise tweets using atoma if `SUMMARISE=true` in `.env` file
 - [ ] Integrate with eliza and use eliza's sessions for discord-bot login and twitter-agent login
+- [ ] Send message to individual users.
 
 ## Example Output
 
