@@ -1,0 +1,18 @@
+{
+    "name": "twitter-discord-bot",
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+      "start": "node index.js",
+      "dev": "nodemon index.js"
+    },
+    "dependencies": {
+      "agent-twitter-client": "latest",
+      "discord.js": "^14.14.1",
+      "dotenv": "^16.4.1",
+      "mongoose": "^8.1.1"
+    },
+    "devDependencies": {
+      "nodemon": "^3.0.3"
+    }
+  }
