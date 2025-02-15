@@ -167,6 +167,62 @@ class Mongo():
             self.summary_collection.update_one(query, update, upsert=True)
         except Exception as e:
             print(f' failed to update summary for {source} with title: {title} and new_text: {new_text[:50]}...\n error:{e}')
+    def get_messages(self, source, model_name):
+        """
+        * returns only query and response
+        * not returning datetime field (cause it is giving serialization error) : todo: fix datetime serialization error.
+
+        returns messages in format:
+        [
+            {
+                'query': <some-query>,
+                'response': <some-response>
+            }, 
+
+            ...
+        ]
+        """
+
+        if model_name.startswith('chat'):
+            print('chat model')
+            # chat messeges
+            chat_history = self.messages_collection.find({'source':source})
+        else:
+            print('brainstrom model')
+            # brainstrom messages
+            chat_history = self.brainstrom_collection.find({'source':source})
+
+        # Iterate through the cursor to get each document
+        messages = []
+        for message in chat_history:
+            messages.extend(message['messages'])
+
+        # to solve error: datetime.datetime(2025, 1, 28, 16, 10, 58, 583000) is not JSON serializable
+        messages_new = []
+        for message in messages:
+            message['timestamp'] = str(message['timestamp'])
+            messages_new.append({
+                'query':message['query'],
+                'response':message['response']
+            })
+        return messages_new
+    def update_summary(self, source, summaries):
+        created_at= datetime.now()
+        
+        # Define the update operation
+        update = {
+            "$set": {
+                "summaries": summaries,
+                "created_at": created_at
+            }
+        }
+    
+        # update if exists, create new otherwise
+        query = {"source": source}
+
+        # Use update_one with upsert=True
+        response = self.summary_collection.update_one(query, update, upsert=True)
+        print(response)
 if __name__=="__main__":
     # delete all data and create unique index for field: 'url'
     mongo = Mongo()

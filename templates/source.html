@@ -157,6 +157,7 @@
                     
                                     const result = await response.json();
                                     if (result.status === "success") {
+                                        // reload the page
                                         location.reload();
                                     }
                                 });
@@ -218,23 +219,152 @@
                 <option value="chat-r1">chat-r1</option>
             </select>
 
+            <style>
+                /* Style for the parent div */
+                /* #chat-messages {
+                    display: flex;
+                    justify-content: center; /* Center horizontally * /
+                    align-items: center; /* Center vertically * /
+                    height: 100vh; /* Full viewport height (or adjust as needed) * /
+                    width: 100%; /* Full width (or adjust as needed) * /
+                    background-color: #f0f0f0; /* Light background for visibility * /
+                } */
+
+                /* Style for the bubble */
+                .bubble {
+                    display: inline-block;
+                    padding: 10px 20px;
+                    background-color: #3f30c2; /* Blue background */
+                    color: white; /* White text */
+                    border-radius: 20px; /* Rounded corners */
+                    font-family: Arial, sans-serif; /* Font */
+                    font-size: 16px; /* Text size */
+                    text-align: center;
+                    cursor: pointer; /* Pointer cursor on hover */
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+                    transition: background-color 0.3s ease; /* Smooth hover effect */
+                }
+
+                /* Hover effect */
+                .bubble:hover {
+                    background-color: #fa004b; /* Darker blue on hover */
+                }
+
+                /* Hide the bubble when needed */
+                .bubble.hide {
+                    display: none;
+                }
+              </style>
             <div id="chat-messages" class="mb-4 h-64 overflow-y-auto p-4 bg-gray-100 rounded shadow-inner">
+                <div id="say_hi_div" class="bubble"><b>say hi!</b></div>
+            
                 {% for message in chat_history %}
                 <div class="mb-4 p-3 rounded-lg bg-white shadow">
                     <div class="font-bold text-blue-600">You:</div>
                     <div class="text-gray-800">{{ message.query }}</div>
                 </div>
-                <div class="mb-4 p-3 rounded-lg bg-gray-200 shadow">
-                    <div class="font-bold text-green-600">Response:</div>
-                    <div class="markdown-content text-gray-800">{{ message.response }}</div>
+                <div class="relative mb-4">
+                    <div class="p-3 rounded-lg bg-gray-200 shadow">
+                        <div class="font-bold text-green-600">Response:</div>
+                        <div class="markdown-content text-gray-800">{{ message.response }}</div>
+                    </div>
+                    {% if loop.last %}
+                    <div class="absolute -bottom-2 right-0 flex gap-2" id="update_lean_canvas" style="">
+                        <button 
+                            onclick="updateLeanCanvasUpdate()"
+                            class="flex items-center justify-center w-6 h-6 rounded-full bg-green-500 hover:bg-green-600 transition-colors focus:outline-none">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </button>
+                        <button 
+                            onclick="noUpdateLeanCanvasUpdate()"
+                            class="flex items-center justify-center w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 transition-colors focus:outline-none">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
+            
+            <script>
+            function noUpdateLeanCanvasUpdate(){
+                
+                // hide
+                document.getElementById('update_lean_canvas').style.display='none'; // none is
+            }
+            async function updateLeanCanvasUpdate() {
+                // hide
+                document.getElementById('update_lean_canvas').style.display='none'; // none is
+                const currentUrl = window.location.href;
+                const source = currentUrl.split('/').pop();
+                const selectedModel = document.getElementById('model_selector').value;
+                try {
+                    // Send the request
+                    const response = await fetch(`/update_lean_canvas/{{ source }}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                             model: selectedModel
+                        })
+                    });
+
+                    // console.log('response', response);
+                    const result = await response.json();
+                    console.log('result', result);
+                    
+                    // Show the spinner
+                    const spinnerOverlay = document.getElementById('update-summary-spinner-overlay');
+                    spinnerOverlay.classList.remove('hidden');
+                    spinnerOverlay.classList.add('flex');
+                    // todo: Reload the page
+                    location.reload();
+                    // todo: sanic app listening to this api call.
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Something went wrong. Please try again.');
+                } finally {
+                    // Re-enable the button and hide the loading indicator
+                    submitButton.disabled = false;
+                    loadingIndicator.classList.add('hidden');
+                }
+            }
+            </script>
+            <script>
+                if (document.getElementById('chat-messages').children.length < 2) {
+                    console.log('len. is zero');
+                    // Get the div with id 'say_hi_div'
+                    const say_hi_div = document.getElementById('say_hi_div');
+
+                    // Add an onclick event listener to the div
+                    say_hi_div.onclick = () => {
+                        console.log('clicked say hi!');
+                        // Get the chat input form element
+                        const chat_input_form = document.getElementById('chat-input');
+
+                        // Set the value of the chat input form to "hi!"
+                        chat_input_form.value = "hi!";
+
+                        // Hide the 'say_hi_div' by adding the 'hide' class
+                        say_hi_div.classList.add('hide');
+                        document.getElementById('say_hi_div').style.display='none'
+
+                        // Get the submit button and click it
+                        const submit_button = document.getElementById('submitButton');
+                        submit_button.click();
+                    };
+                } else {
+                    document.getElementById('say_hi_div').style.display='none';
+                }
+            </script>
 
             <form id="chatForm" class="flex gap-4">
                 
 
-                <input type="text" name="query" class="flex-1 p-2 border border-gray-300 rounded" placeholder="Ask a question..." required>
+                <input id="chat-input" type="text" name="query" class="flex-1 p-2 border border-gray-300 rounded" placeholder="Ask a question..." required>
                 <button type="submit" id="submitButton" class="bg-blue-500 text-white px-4 py-2 rounded flex items-center gap-2">
                     <span>Send</span>
                     <span id="loadingIndicator" class="hidden">⏳</span>
@@ -306,20 +436,51 @@
 
                     // console.log('response', response);
                     const result = await response.json();
-                    // console.log('result', result);
+                    console.log('result', result);
+                    console.log('query', query);
 
                     // Append the response to the chat messages
                     const messagesDiv = document.getElementById('chat-messages');
-                    messagesDiv.innerHTML += `
-                    <div class="mb-4 p-3 rounded-lg bg-white shadow">
-                    <div class="font-bold text-blue-600">You:</div>
-                    <div class="text-gray-800">${query}</div>
-                    </div>
-                    <div class="mb-4 p-3 rounded-lg bg-gray-200 shadow">
-                        <div class="font-bold text-green-600">Response:</div>
-                        <div class=" markdown-content text-gray-800">${result.response}</div>
-                    </div>
-                    `;
+                    
+                    if (result.show_update_checkbox){
+                        messagesDiv.innerHTML += `
+                            <div class="mb-4 p-3 rounded-lg bg-white shadow">
+                            <div class="font-bold text-blue-600">You:</div>
+                            <div class="text-gray-800">${query}</div>
+                            </div>
+                            <div class="mb-4 p-3 rounded-lg bg-gray-200 shadow">
+                                <div class="font-bold text-green-600">Response:</div>
+                                <div class=" markdown-content text-gray-800">${result.response}</div>
+                            </div>
+                            `;    
+                        // document.getElementById('update_lean_canvas').style.display='';
+                    } else {
+                        messagesDiv.innerHTML += `
+                            <div class="mb-4 p-3 rounded-lg bg-white shadow">
+                            <div class="font-bold text-blue-600">You:</div>
+                            <div class="text-gray-800">${query}</div>
+                            </div>
+                            <div class="mb-4 p-3 rounded-lg bg-gray-200 shadow">
+                                <div class="font-bold text-green-600">Response:</div>
+                                <div class=" markdown-content text-gray-800">${result.response}</div>
+                            </div>
+                            <div class="absolute -bottom-2 right-0 flex gap-2" id="update_lean_canvas" style="display:;">
+                                <button 
+                                    onclick="updateLeanCanvasUpdate()"
+                                    class="flex items-center justify-center w-6 h-6 rounded-full bg-green-500 hover:bg-green-600 transition-colors focus:outline-none">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </button>
+                                <button 
+                                    onclick="noUpdateLeanCanvasUpdate()"
+                                    class="flex items-center justify-center w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 transition-colors focus:outline-none">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>`;
+                    }
                     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
                     // Clear the input field

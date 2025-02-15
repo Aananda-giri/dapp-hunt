@@ -229,6 +229,7 @@ async def regenerate_summary(request):
         print(f': done!')
     
     # print(f'summaries: {summaries}')
+    # replace this code with mongo functin: update_summary
     # Save summary to MongoDB
     summary_doc = {
         "source": source,
@@ -257,6 +258,21 @@ async def regenerate_summary(request):
     print(f'redirecting to \"/source/{source}\"')
     return json({"status": "success", "redirect_url":f"/source/{source}"})
 
+@app.route("/update_lean_canvas/<source>", methods=["POST"])
+async def update_lean_canvas(request, source):
+    """Chat endpoint"""
+    # // todo: sanic app listening to this api call.
+    # const selectedModel = document.getElementById('model_selector').value;
+    data = request.json
+    print(f'data:{data}')
+    
+    model_name = data.get("model")
+    print(f"Update lean canvas. source:{source}, model: {model_name}")
+    
+    # regenerate summary
+    qa_system.regenerate_lean_canvas_v2(model_name, source)
+
+    return json({})
 
 @app.route("/chat/<source>", methods=["POST"])
 async def chat(request, source):
@@ -286,6 +302,9 @@ async def chat(request, source):
             brainstrom=True,    # Added for brainstroming (False by default)
             use_r1=use_r1   # whether or not use r1 model
         )
+        
+        # update lean canvas checkbox
+        show_update_checkbox = qa_system.should_we_show_update_lean_canvas_checkbox(response)
         # print(f'response: {response}')
         mongo.append_brainstrom_message(source, query, response)
     else:
@@ -303,11 +322,11 @@ async def chat(request, source):
             use_r1=use_r1
         )
         # print(f'response: {response}')
-
+        show_update_checkbox = qa_system.should_we_show_update_lean_canvas_checkbox(response)
         mongo.append_message(source, query, response)
     
     print(f' query: {query}\n response: {response}')
-    return json({"response": response})
+    return json({"response": response, "show_update_checkbox": show_update_checkbox})
 
 @app.route("/model_change", methods=["GET", "POST"])
 async def model_change(request):
