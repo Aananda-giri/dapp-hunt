@@ -75,7 +75,7 @@
         <!-- Summary Section -->
         <!-- --------------- -->
         <div class="max-w-7xl mx-auto">
-            <h1 class="text-3xl font-bold text-center mb-8">Lean Canvas</h1>
+            <!-- <h1 class="text-3xl font-bold text-center mb-8">Lean Canvas</h1> -->
             
             <div class="grid grid-cols-1 place-items-center gap-4 mb-4">
             <!-- <div class="sticky-note bg-indigo-100 p-4 rounded-lg shadow">
@@ -209,16 +209,27 @@
             </div>
             {% endfor %}
         </div> -->
+       
+
+
+
         <!-- Chat Interface -->
         <div class="bg-white p-6 rounded shadow">
-            <h2 class="text-3xl font-bold mb-6 text-gray-900 border-b-2 pb-2">Ask Questions</h2>
-            <select name="model" id="model_selector" class="p-2 mb-8 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="brainstrom-r1">brainstrom-r1</option>
-                <option value="brainstrom-llama3-70B">brainstrom-llama3-70B</option>
-                <option value="chat-llama3-70B">chat-llama3-70B</option>
-                <option value="chat-r1">chat-r1</option>
-            </select>
-
+            <h2 class="text-3xl font-bold mb-6 text-gray-900 border-b-2 pb-2">Discussion</h2>
+            <div class="flex justify-between items-center mb-8">
+                <select name="model" id="model_selector" class="p-2 mb-8 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="brainstrom-r1">investor-r1</option>
+                    <option value="brainstrom-llama3-70B">investor-llama3-70B</option>
+                    <option value="chat-r1">cofounder-r1</option>
+                    <option value="chat-llama3-70B">cofounder-llama3-70B</option>
+                </select>
+                <button class="bg-gray-200 rounded hover:bg-gray-300 px-5 py-3 flex items-center text-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 mr-3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 16v-8m0 8l-4-4m4 4l4-4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+                    </svg>
+                    <span class="font-medium">Download</span>
+                </button>
+            </div>
             <style>
                 /* Style for the parent div */
                 /* #chat-messages {
@@ -259,17 +270,24 @@
                 <div id="say_hi_div" class="bubble"><b>say hi!</b></div>
             
                 {% for message in chat_history %}
-                <div class="mb-4 p-3 rounded-lg bg-white shadow">
-                    <div class="font-bold text-blue-600">You:</div>
-                    <div class="text-gray-800">{{ message.query }}</div>
+                <div class="flex justify-end mb-4">
+                    <div class="w-4/5 p-3 rounded-lg bg-white shadow">
+                        <div class="font-bold text-blue-600">You:</div>
+                        <div class="text-gray-800">{{ message.query }}</div>
+                    </div>
                 </div>
+
+
                 <div class="relative mb-4">
-                    <div class="p-3 rounded-lg bg-gray-200 shadow">
-                        <div class="font-bold text-green-600">Response:</div>
-                        <div class="markdown-content text-gray-800">{{ message.response }}</div>
+                <div class="flex relative justify-start mb-4">
+                    <div class="w-4/5 p-3 rounded-lg bg-gray-200 shadow">
+                        <div class="font-bold text-green-600 assistant_user_name">Response:</div>
+                        <div class="markdown-content text-gray-800">
+                            {{ message.response }}
+                        </div>
                     </div>
                     {% if loop.last %}
-                    <div class="absolute -bottom-2 right-0 flex gap-2" id="update_lean_canvas" style="display: none;">
+                    <div class="absolute -bottom-2 right-40 flex gap-2" id="update_lean_canvas" style="display:none;">
                         <button 
                             onclick="updateLeanCanvasUpdate()"
                             class="flex items-center justify-center w-6 h-6 rounded-full bg-green-500 hover:bg-green-600 transition-colors focus:outline-none">
@@ -373,9 +391,60 @@
         </div>
 
         <script>
+
+        // function to update assistant name
+        function updateAssistantName() {
+            // Get the dropdown element
+            const dropdown = document.getElementById('model_selector');
+            
+            // Get all elements with class 'assistant_user_name'
+            const assistantNameElements = document.getElementsByClassName('assistant_user_name');
+            
+            // Determine the name based on selected value
+            const selectedValue = dropdown.value;
+            const assistantName = selectedValue.startsWith('brainstrom') ? 'Investor:' : 'Co-Founder:';
+            
+            // Update all elements with the new name
+            Array.from(assistantNameElements).forEach(element => {
+                element.textContent = assistantName;
+            });
+        }
+
+        // Add event listener to dropdown for changes
+        document.getElementById('model_selector').addEventListener('change', updateAssistantName);
+
+        // Call the function once on page load to set initial state
+        updateAssistantName();
         
         // give them different colours
         document.addEventListener("DOMContentLoaded", function () {
+            function replaceAsterisksWithBullets() {
+                    // Get all text nodes in the document
+                    const walker = document.createTreeWalker(
+                        document.body,
+                        NodeFilter.SHOW_TEXT,
+                        null,
+                        false
+                    );
+
+                    // Store text nodes that need to be modified
+                    const nodesToReplace = [];
+                    let node;
+                    
+                    // Collect all text nodes
+                    while (node = walker.nextNode()) {
+                        if (node.textContent.includes('*')) {
+                            nodesToReplace.push(node);
+                        }
+                    }
+                    
+                    // Replace asterisks with bullet points in each node
+                    nodesToReplace.forEach(node => {
+                        node.textContent = node.textContent.replace(/\*/g, '•');
+                    });
+            }
+            replaceAsterisksWithBullets();
+
             // Get all elements with class 'markdown-content'
             const colors = [
                 "bg-red-100", "bg-blue-100", "bg-green-100", 
@@ -444,27 +513,45 @@
                     
                     if (result.show_update_checkbox){
                         messagesDiv.innerHTML += `
-                            <div class="mb-4 p-3 rounded-lg bg-white shadow">
-                            <div class="font-bold text-blue-600">You:</div>
-                            <div class="text-gray-800">${query}</div>
+                        <div class="flex justify-end mb-4">
+                            <div class="w-4/5 p-3 rounded-lg bg-white shadow">
+                                <div class="font-bold text-blue-600">You:</div>
+                                <div class="text-gray-800">${query}</div>
                             </div>
-                            <div class="mb-4 p-3 rounded-lg bg-gray-200 shadow">
-                                <div class="font-bold text-green-600">Response:</div>
-                                <div class=" markdown-content text-gray-800">${result.response}</div>
+                        </div>
+
+
+                        <div class="relative mb-4">
+                        <div class="flex relative justify-start mb-4">
+                            <div class="w-4/5 p-3 rounded-lg bg-gray-200 shadow">
+                                <div class="font-bold text-green-600 assistant_user_name">Response:</div>
+                                <div class="markdown-content text-gray-800">
+                                    ${result.response}
+                                </div>
                             </div>
+                        </div>
                             `;    
                         // document.getElementById('update_lean_canvas').style.display='';
                     } else {
                         messagesDiv.innerHTML += `
-                            <div class="mb-4 p-3 rounded-lg bg-white shadow">
-                            <div class="font-bold text-blue-600">You:</div>
-                            <div class="text-gray-800">${query}</div>
+                            <div class="flex justify-end mb-4">
+                            <div class="w-4/5 p-3 rounded-lg bg-white shadow">
+                                <div class="font-bold text-blue-600">You:</div>
+                                <div class="text-gray-800">${query}</div>
                             </div>
-                            <div class="mb-4 p-3 rounded-lg bg-gray-200 shadow">
-                                <div class="font-bold text-green-600">Response:</div>
-                                <div class=" markdown-content text-gray-800">${result.response}</div>
+                        </div>
+
+
+                        <div class="relative mb-4">
+                        <div class="flex relative justify-start mb-4">
+                            <div class="w-4/5 p-3 rounded-lg bg-gray-200 shadow">
+                                <div class="font-bold text-green-600 assistant_user_name">Response:</div>
+                                <div class="markdown-content text-gray-800">
+                                    ${result.response}
+                                </div>
                             </div>
-                            <div class="absolute -bottom-2 right-0 flex gap-2" id="update_lean_canvas" style="display:;">
+                            
+                            <div class="absolute -bottom-2 right-40 flex gap-2" id="update_lean_canvas">
                                 <button 
                                     onclick="updateLeanCanvasUpdate()"
                                     class="flex items-center justify-center w-6 h-6 rounded-full bg-green-500 hover:bg-green-600 transition-colors focus:outline-none">
@@ -479,8 +566,11 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                     </svg>
                                 </button>
-                            </div>`;
+                            </div>
+                        </div>`;
                     }
+                    // assistant names: Investor, cofounder
+                    updateAssistantName();
                     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
                     // Clear the input field
@@ -633,3 +723,13 @@
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
