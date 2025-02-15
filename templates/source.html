@@ -269,7 +269,7 @@
                         <div class="markdown-content text-gray-800">{{ message.response }}</div>
                     </div>
                     {% if loop.last %}
-                    <div class="absolute -bottom-2 right-0 flex gap-2" id="update_lean_canvas" style="">
+                    <div class="absolute -bottom-2 right-0 flex gap-2" id="update_lean_canvas" style="display: none;">
                         <button 
                             onclick="updateLeanCanvasUpdate()"
                             class="flex items-center justify-center w-6 h-6 rounded-full bg-green-500 hover:bg-green-600 transition-colors focus:outline-none">
@@ -631,40 +631,5 @@
         // convertMarkdownContent();
         </script>
 
-        <!-- Chat Interface -->
-        <!-- <div class="bg-white p-6 rounded shadow">
-            <h2 class="text-2xl mb-4">Ask Questions</h2>
-            <div id="chat-messages" class="mb-4 h-64 overflow-y-auto"></div>
-            <form id="chatForm" class="flex gap-4">
-                <input type="text" name="query" class="flex-1 p-2 border rounded" placeholder="Ask a question...">
-                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Send</button>
-            </form>
-        </div>
-    </div>
-    <script>
-        document.getElementById('chatForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const query = e.target.query.value;
-            const response = await fetch(`/chat/{{ source }}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({query})
-            });
-            const result = await response.json();
-            const messagesDiv = document.getElementById('chat-messages');
-            messagesDiv.innerHTML += `
-                <div class="mb-4">
-                    <div class="font-bold">You:</div>
-                    <div>${query}</div>
-                </div>
-                <div class="mb-4">
-                    <div class="font-bold">Response:</div>
-                    <div>${result.response}</div>
-                </div>
-            `;
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            e.target.query.value = '';
-        };
-    </script>-->
 </body>
 </html>
