@@ -414,6 +414,46 @@ async def update_text(request):
     
     return response.json({"status": "success"})
 
+@app.route("/delete_source/<source>", methods=["POST"])
+async def delete_source(request, source):
+    """Delete source"""
+    print(f'\n\ndeleting source: {source}')
+
+    # delete summary collection
+    mongo.summary_collection.delete_one({'source':source})
+    
+    # Delete messages collection
+    mongo.messages_collection.delete_one({'source':source})
+
+    # Delete brainstrom collection
+    mongo.brainstrom_collection.delete_one({'source':source})
+
+    # Delete pdf files generated
+    pdf_files = [f for f in os.listdir('summaries') if f.startswith(source+'_')]
+    for file in pdf_files:
+        os.remove(os.path.join('summaries', file))
+
+    return response.json({"status": "success"})
+    
+import json
+@app.route("/download_conversation/<source>", methods=["POST"])
+async def download_conversation(request, source):
+    """Download conversation"""
+    data = request.json
+    model_name = data.get("model")
+    
+    # get conversation json file
+    conversations = mongo.get_messages(source, model_name, exclude_timestamp=False)
+    
+    # Return the JSON directly with proper headers
+    return response.json(
+        conversations,
+        headers={
+            "Content-Disposition": f'attachment; filename="{source}_conversation.json"',
+            "Content-Type": "application/json"
+        }
+    )
 if __name__ == "__main__":
     os.makedirs('summaries', exist_ok=True)
+    os.makedirs('conversations', exist_ok=True)
     app.run(host="0.0.0.0", port=5000, debug=True)

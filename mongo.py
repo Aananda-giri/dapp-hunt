@@ -167,7 +167,7 @@ class Mongo():
             self.summary_collection.update_one(query, update, upsert=True)
         except Exception as e:
             print(f' failed to update summary for {source} with title: {title} and new_text: {new_text[:50]}...\n error:{e}')
-    def get_messages(self, source, model_name):
+    def get_messages(self, source, model_name, exclude_timestamp=True):
         """
         * returns only query and response
         * not returning datetime field (cause it is giving serialization error) : todo: fix datetime serialization error.
@@ -197,14 +197,19 @@ class Mongo():
         for message in chat_history:
             messages.extend(message['messages'])
 
-        # to solve error: datetime.datetime(2025, 1, 28, 16, 10, 58, 583000) is not JSON serializable
-        messages_new = []
-        for message in messages:
-            message['timestamp'] = str(message['timestamp'])
-            messages_new.append({
-                'query':message['query'],
-                'response':message['response']
-            })
+        if exclude_timestamp:
+            # to solve error: datetime.datetime(2025, 1, 28, 16, 10, 58, 583000) is not JSON serializable
+            messages_new = []
+            for message in messages:
+                messages_new.append({
+                    'query':message['query'],
+                    'response':message['response']
+                })
+        else:
+            messages_new = []
+            for message in messages:
+                message['timestamp'] = str(message['timestamp'])
+                messages_new.append(message)
         return messages_new
     def update_summary(self, source, summaries):
         created_at= datetime.now()
@@ -240,8 +245,6 @@ if __name__=="__main__":
                 'text_content': 'bing is a search enginee too..',
             
             },
-
-
         ]
     # mongo.add_documents(documents)
     print(mongo.list_documents('google.com'))

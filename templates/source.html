@@ -223,7 +223,7 @@
                     <option value="chat-r1">cofounder-r1</option>
                     <option value="chat-llama3-70B">cofounder-llama3-70B</option>
                 </select>
-                <button class="bg-gray-200 rounded hover:bg-gray-300 px-5 py-3 flex items-center text-lg">
+                <button onclick="downloadConversation();" class="bg-gray-200 rounded hover:bg-gray-300 px-5 py-3 flex items-center text-lg">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 mr-3">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 16v-8m0 8l-4-4m4 4l4-4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
                     </svg>
@@ -458,6 +458,7 @@
         });
 
             function convertMarkdownContent() {
+                return;
                 // Select all elements with the class 'markdown-content'
                 const mdElements = document.querySelectorAll('.markdown-content');
                 
@@ -473,7 +474,44 @@
             // Call the function once the DOM is fully loaded
             // document.addEventListener('DOMContentLoaded', convertMarkdownContent);
 
+            async function downloadConversation() {
+                const currentUrl = window.location.href;
+                const source = currentUrl.split('/').pop();
+                const selectedModel = document.getElementById('model_selector').value;
+                
+                try {
+                    const response = await fetch(`/download_conversation/${source}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            model: selectedModel
+                        })
+                    });
 
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    // Get the blob from the response
+                    const blob = await response.blob();
+                    
+                    // Create a link to download the blob
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${source}_conversation.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    
+                    // Cleanup
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Something went wrong. Please try again.');
+                }
+            }
             document.getElementById('chatForm').onsubmit = async (e) => {
                 e.preventDefault();
 
