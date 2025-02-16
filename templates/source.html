@@ -71,30 +71,11 @@
     <hr class="mb-8">
     <h1 class="text-3xl font-bold text-center mb-8">{{source | capitalize}}</h1>        
     <hr class="mb-8">
-    <div class="max-w-4xl mx-auto">
         <!-- --------------- -->
         <!-- lean canvas Section -->
         <!-- --------------- -->
         <div class="max-w-7xl mx-auto">
-            <!-- <h1 class="text-3xl font-bold text-center mb-8">Lean Canvas</h1> -->
-            
-            <div class="grid grid-cols-1 place-items-center gap-4 mb-4">
-            <!-- <div class="sticky-note bg-indigo-100 p-4 rounded-lg shadow">
-                <h2 class="font-bold mb-2">Cost Structure</h2>
-                <p class="text-gray-700">Click to edit cost structure</p>
-            </div> -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <!-- Problem & Customer Segments -->
-                <!-- <div class="space-y-4">
-                    <div class="sticky-note bg-yellow-100 p-4 rounded-lg shadow">
-                        <h2 class="font-bold mb-2">Problem</h2>
-                        <p class="text-gray-700">Click to edit problem statement</p>
-                    </div>
-                    <div class="sticky-note bg-red-100 p-4 rounded-lg shadow">
-                        <h2 class="font-bold mb-2">Customer Segments</h2>
-                        <p class="text-gray-700">Click to edit customer segments</p>
-                    </div>
-                </div> -->
     
                 <!-- Value Proposition -->
                 
@@ -111,108 +92,67 @@
                     </div>
                     
                     <script>
-                    document.addEventListener("DOMContentLoaded", function () {
-                        document.querySelectorAll(".sticky-note").forEach(note => {
+                        document.addEventListener("DOMContentLoaded", function () {
+                            document.querySelectorAll(".sticky-note").forEach(note => {
 
-                            const pElement = note.querySelector(".editable");
-                            const editBtn = document.createElement("button");
-                            editBtn.innerHTML = "✏️"; // Edit icon
-                            editBtn.classList.add("absolute", "top-2", "right-2", "p-1", "bg-gray-200", "rounded", "hover:bg-gray-300", "hidden");
-                    
-                            // Show edit button on hover
-                            note.addEventListener("mouseenter", () => editBtn.classList.remove("hidden"));
-                            note.addEventListener("mouseleave", () => editBtn.classList.add("hidden"));
-                    
-                            editBtn.addEventListener("click", function () {
-                                const originalText = pElement.innerText;
-                                const title = note.querySelector("h2").innerText;
-                                const source = window.location.pathname.split("/").pop(); // Extract source from URL
-                    
-                                // Replace <p> with <textarea>
-                                const textarea = document.createElement("textarea");
-                                textarea.value = originalText;
-                                textarea.classList.add("w-full", "p-2", "border", "rounded");
-                    
-                                const saveBtn = document.createElement("button");
-                                saveBtn.innerText = "Save";
-                                saveBtn.classList.add("bg-blue-500", "text-white", "p-2", "rounded", "mt-2");
-                    
-                                pElement.replaceWith(textarea);
-                                note.appendChild(saveBtn);
-                    
-                                saveBtn.addEventListener("click", async function () {
-                                    // Show the spinner
-                                    const spinnerOverlay = document.getElementById('update-summary-spinner-overlay');
-                                    spinnerOverlay.classList.remove('hidden');
-                                    spinnerOverlay.classList.add('flex');
-                                    
-                                    const newEditedText = textarea.value;
-                    
-                                    const response = await fetch("/update_summary", {
-                                        method: "POST",
-                                        headers: {
-                                            "Content-Type": "application/json"
-                                        },
-                                        body: JSON.stringify({ title: title, text: newEditedText, source: source })
+                                const pElement = note.querySelector(".editable");
+                                const editBtn = document.createElement("button");
+                                editBtn.innerHTML = "✏️"; // Edit icon
+                                editBtn.classList.add("absolute", "top-2", "right-2", "p-1", "bg-gray-200", "rounded", "hover:bg-gray-300", "hidden");
+                        
+                                // Show edit button on hover
+                                note.addEventListener("mouseenter", () => editBtn.classList.remove("hidden"));
+                                note.addEventListener("mouseleave", () => editBtn.classList.add("hidden"));
+                        
+                                editBtn.addEventListener("click", function () {
+                                    const originalText = pElement.innerText;
+                                    const title = note.querySelector("h2").innerText;
+                                    const source = window.location.pathname.split("/").pop(); // Extract source from URL
+                        
+                                    // Replace <p> with <textarea>
+                                    const textarea = document.createElement("textarea");
+                                    textarea.value = originalText;
+                                    textarea.classList.add("w-full", "p-2", "border", "rounded");
+                        
+                                    const saveBtn = document.createElement("button");
+                                    saveBtn.innerText = "Save";
+                                    saveBtn.classList.add("bg-blue-500", "text-white", "p-2", "rounded", "mt-2");
+                        
+                                    pElement.replaceWith(textarea);
+                                    note.appendChild(saveBtn);
+                        
+                                    saveBtn.addEventListener("click", async function () {
+                                        // Show the spinner
+                                        const spinnerOverlay = document.getElementById('update-summary-spinner-overlay');
+                                        spinnerOverlay.classList.remove('hidden');
+                                        spinnerOverlay.classList.add('flex');
+                                        
+                                        const newEditedText = textarea.value;
+                        
+                                        const response = await fetch("/update_summary", {
+                                            method: "POST",
+                                            headers: {
+                                                "Content-Type": "application/json"
+                                            },
+                                            body: JSON.stringify({ title: title, text: newEditedText, source: source })
+                                        });
+                        
+                                        const result = await response.json();
+                                        if (result.status === "success") {
+                                            // reload the page
+                                            location.reload();
+                                        }
                                     });
-                    
-                                    const result = await response.json();
-                                    if (result.status === "success") {
-                                        // reload the page
-                                        location.reload();
-                                    }
                                 });
+                        
+                                note.appendChild(editBtn);
                             });
-                    
-                            note.appendChild(editBtn);
                         });
-                    });
                     </script>
                     
                     {% endfor %}
-                    <!-- <div class="sticky-note bg-orange-100 p-2 rounded-lg shadow">
-                        <h2 class="font-bold mb-2">Channels</h2>
-                        <p class="text-gray-700">Click to edit channels</p>
-                    </div> -->
-                
-    
-                <!-- Solution & Metrics
-                <div class="space-y-4">
-                    <div class="sticky-note bg-green-100 p-4 rounded-lg shadow">
-                        <h2 class="font-bold mb-2">Solution</h2>
-                        <p class="text-gray-700">Click to edit solution</p>
-                    </div>
-                    <div class="sticky-note bg-blue-100 p-4 rounded-lg shadow">
-                        <h2 class="font-bold mb-2">Key Metrics</h2>
-                        <p class="text-gray-700">Click to edit metrics</p>
-                    </div>
-                </div>
             </div>
-    
-            <!- - Bottom Row - ->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="sticky-note bg-indigo-100 p-4 rounded-lg shadow">
-                    <h2 class="font-bold mb-2">Cost Structure</h2>
-                    <p class="text-gray-700">Click to edit cost structure</p>
-                </div>
-                <div class="sticky-note bg-teal-100 p-4 rounded-lg shadow">
-                    <h2 class="font-bold mb-2">Revenue Streams</h2>
-                    <p class="text-gray-700">Click to edit revenue streams</p>
-                </div>
-            </div> -->
         </div>
-        <!-- <div class="bg-white p-6 rounded shadow mb-8">
-            <h2 class="text-2xl mb-4">Summary</h2>
-            {% for key, value in summary.items() %}
-            <div class="mb-6">
-                <h3 class="font-bold mb-2">{{ key|title }}</h3>
-                <p>{{ value }}</p>
-            </div>
-            {% endfor %}
-        </div> -->
-       
-
-
 
         <!-- Chat Interface -->
         <div class="bg-white p-6 rounded shadow">
@@ -271,44 +211,53 @@
                 <div id="say_hi_div" class="bubble"><b>say hi!</b></div>
             
                 {% for message in chat_history %}
-                <div class="flex justify-end mb-4">
-                    <div class="w-4/5 p-3 rounded-lg bg-white shadow">
-                        <div class="font-bold text-blue-600">You:</div>
-                        <div class="text-gray-800">{{ message.query }}</div>
-                    </div>
-                </div>
-
-
-                <div class="relative mb-4">
-                <div class="flex relative justify-start mb-4">
-                    <div class="w-4/5 p-3 rounded-lg bg-gray-200 shadow">
-                        <div class="font-bold text-green-600 assistant_user_name">Response:</div>
-                        <div class="markdown-content text-gray-800">
-                            {{ message.response }}
+                    <div class="flex justify-end mb-4">
+                        <div class="w-4/5 p-3 rounded-lg bg-white shadow">
+                            <div class="font-bold text-blue-600">You:</div>
+                            <div class="text-gray-800">{{ message.query }}</div>
                         </div>
                     </div>
-                    {% if loop.last %}
-                    <div class="absolute -bottom-2 right-40 flex gap-2" id="update_lean_canvas" style="display:none;">
-                        <button 
-                            onclick="updateLeanCanvasUpdate()"
-                            class="flex items-center justify-center w-6 h-6 rounded-full bg-green-500 hover:bg-green-600 transition-colors focus:outline-none">
-                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                        </button>
-                        <button 
-                            onclick="noUpdateLeanCanvasUpdate()"
-                            class="flex items-center justify-center w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 transition-colors focus:outline-none">
-                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
+
+
+                    <div class="relative mb-4">
+                        <div class="flex relative justify-start mb-4">
+                            <div class="w-4/5 p-3 rounded-lg bg-gray-200 shadow">
+                                <div class="font-bold text-green-600 assistant_user_name">Response:</div>
+                                <div class="markdown-content text-gray-800">
+                                    {{ message.response }}
+                                </div>
+                            </div>
+                            {% if loop.last %}
+                                <div class="absolute -bottom-2 right-40 flex gap-2" id="update_lean_canvas" style="display:none;">
+                                    <button 
+                                        onclick="updateLeanCanvasUpdate()"
+                                        class="flex items-center justify-center w-6 h-6 rounded-full bg-green-500 hover:bg-green-600 transition-colors focus:outline-none">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </button>
+                                    <button 
+                                        onclick="noUpdateLeanCanvasUpdate()"
+                                        class="flex items-center justify-center w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 transition-colors focus:outline-none">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
-                    {% endif %}
-                </div>
                 {% endfor %}
             </div>
-            
+            <form id="chatForm" class="flex gap-4">
+                
+
+                <input id="chat-input" type="text" name="query" class="flex-1 p-2 border border-gray-300 rounded" placeholder="Ask a question..." required>
+                <button type="submit" id="submitButton" class="bg-blue-500 text-white px-4 py-2 rounded flex items-center gap-2">
+                    <span>Send</span>
+                    <span id="loadingIndicator" class="hidden">⏳</span>
+                </button>
+            </form>
             <script>
             function noUpdateLeanCanvasUpdate(){
                 
@@ -379,16 +328,6 @@
                     document.getElementById('say_hi_div').style.display='none';
                 }
             </script>
-
-            <form id="chatForm" class="flex gap-4">
-                
-
-                <input id="chat-input" type="text" name="query" class="flex-1 p-2 border border-gray-300 rounded" placeholder="Ask a question..." required>
-                <button type="submit" id="submitButton" class="bg-blue-500 text-white px-4 py-2 rounded flex items-center gap-2">
-                    <span>Send</span>
-                    <span id="loadingIndicator" class="hidden">⏳</span>
-                </button>
-            </form>
         </div>
 
         <script>
@@ -458,216 +397,218 @@
             
         });
 
-            function convertMarkdownContent() {
-                return;
-                // Select all elements with the class 'markdown-content'
-                const mdElements = document.querySelectorAll('.markdown-content');
-                
-                // Loop through each element and convert its markdown to HTML
-                mdElements.forEach(mdElement => {
-                    const mdText = mdElement.textContent; // Get raw markdown text
-                    const htmlContent = marked.parse(mdText); // Convert markdown to HTML
-                    mdElement.innerHTML = htmlContent; // Replace markdown with HTML
+        function convertMarkdownContent() {
+            return;
+            // Select all elements with the class 'markdown-content'
+            const mdElements = document.querySelectorAll('.markdown-content');
+            
+            // Loop through each element and convert its markdown to HTML
+            mdElements.forEach(mdElement => {
+                const mdText = mdElement.textContent; // Get raw markdown text
+                const htmlContent = marked.parse(mdText); // Convert markdown to HTML
+                mdElement.innerHTML = htmlContent; // Replace markdown with HTML
+            });
+        }
+        convertMarkdownContent();
+
+        // Call the function once the DOM is fully loaded
+        // document.addEventListener('DOMContentLoaded', convertMarkdownContent);
+
+        async function downloadConversation() {
+            const currentUrl = window.location.href;
+            const source = currentUrl.split('/').pop();
+            const selectedModel = document.getElementById('model_selector').value;
+            
+            try {
+                const response = await fetch(`/download_conversation/${source}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: selectedModel
+                    })
                 });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                convertMarkdownContent();
 
-            // Call the function once the DOM is fully loaded
-            // document.addEventListener('DOMContentLoaded', convertMarkdownContent);
-
-            async function downloadConversation() {
-                const currentUrl = window.location.href;
-                const source = currentUrl.split('/').pop();
-                const selectedModel = document.getElementById('model_selector').value;
+                // Get the blob from the response
+                const blob = await response.blob();
                 
-                try {
-                    const response = await fetch(`/download_conversation/${source}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            model: selectedModel
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    // Get the blob from the response
-                    const blob = await response.blob();
-                    
-                    // Create a link to download the blob
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${source}_conversation.json`;
-                    document.body.appendChild(a);
-                    a.click();
-                    
-                    // Cleanup
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                    
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('Something went wrong. Please try again.');
-                }
+                // Create a link to download the blob
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${source}_conversation.json`;
+                document.body.appendChild(a);
+                a.click();
+                
+                // Cleanup
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Something went wrong. Please try again.');
             }
-            document.getElementById('chatForm').onsubmit = async (e) => {
-                e.preventDefault();
+        }
+        document.getElementById('chatForm').onsubmit = async (e) => {
+            e.preventDefault();
 
-                // Get references to the button and loading indicator
-                const submitButton = document.getElementById('submitButton');
-                const loadingIndicator = document.getElementById('loadingIndicator');
+            // Get references to the button and loading indicator
+            const submitButton = document.getElementById('submitButton');
+            const loadingIndicator = document.getElementById('loadingIndicator');
 
-                // Disable the button and show the loading indicator
-                submitButton.disabled = true;
-                loadingIndicator.classList.remove('hidden');
+            // Disable the button and show the loading indicator
+            submitButton.disabled = true;
+            loadingIndicator.classList.remove('hidden');
 
-                // Get the query
-                const query = e.target.query.value;
+            // Get the query
+            const query = e.target.query.value;
+            
+            // Get the selected model
+            const selectedModel = document.getElementById('model_selector').value;
+            console.log('model', selectedModel);
+
+            try {
+                // Send the request
+                const response = await fetch(`/chat/{{ source }}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                            query:query,
+                            model: selectedModel
+                    })
+                });
+
+                // console.log('response', response);
+                const result = await response.json();
+                console.log('result', result);
+                console.log('query', query);
+
+                // Append the response to the chat messages
+                const messagesDiv = document.getElementById('chat-messages');
                 
-                // Get the selected model
-                const selectedModel = document.getElementById('model_selector').value;
-                console.log('model', selectedModel);
+                if (result.show_update_checkbox){
+                    messagesDiv.innerHTML += `
+                    <div class="flex justify-end mb-4">
+                        <div class="w-4/5 p-3 rounded-lg bg-white shadow">
+                            <div class="font-bold text-blue-600">You:</div>
+                            <div class="text-gray-800">${query}</div>
+                        </div>
+                    </div>
 
-                try {
-                    // Send the request
-                    const response = await fetch(`/chat/{{ source }}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                             query:query,
-                             model: selectedModel
-                        })
-                    });
 
-                    // console.log('response', response);
-                    const result = await response.json();
-                    console.log('result', result);
-                    console.log('query', query);
-
-                    // Append the response to the chat messages
-                    const messagesDiv = document.getElementById('chat-messages');
-                    
-                    if (result.show_update_checkbox){
-                        messagesDiv.innerHTML += `
+                    <div class="relative mb-4">
+                        <div class="flex relative justify-start mb-4">
+                            <div class="w-4/5 p-3 rounded-lg bg-gray-200 shadow">
+                                <div class="font-bold text-green-600 assistant_user_name">Response:</div>
+                                <div class="markdown-content text-gray-800">
+                                    ${result.response}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                        `;    
+                    // document.getElementById('update_lean_canvas').style.display='';
+                } else {
+                    messagesDiv.innerHTML += `
                         <div class="flex justify-end mb-4">
                             <div class="w-4/5 p-3 rounded-lg bg-white shadow">
                                 <div class="font-bold text-blue-600">You:</div>
                                 <div class="text-gray-800">${query}</div>
                             </div>
                         </div>
+                    </div>
 
 
-                        <div class="relative mb-4">
-                        <div class="flex relative justify-start mb-4">
-                            <div class="w-4/5 p-3 rounded-lg bg-gray-200 shadow">
-                                <div class="font-bold text-green-600 assistant_user_name">Response:</div>
-                                <div class="markdown-content text-gray-800">
-                                    ${result.response}
-                                </div>
+                    <div class="relative mb-4">
+                    <div class="flex relative justify-start mb-4">
+                        <div class="w-4/5 p-3 rounded-lg bg-gray-200 shadow">
+                            <div class="font-bold text-green-600 assistant_user_name">Response:</div>
+                            <div class="markdown-content text-gray-800">
+                                ${result.response}
                             </div>
                         </div>
-                            `;    
-                        // document.getElementById('update_lean_canvas').style.display='';
-                    } else {
-                        messagesDiv.innerHTML += `
-                            <div class="flex justify-end mb-4">
-                            <div class="w-4/5 p-3 rounded-lg bg-white shadow">
-                                <div class="font-bold text-blue-600">You:</div>
-                                <div class="text-gray-800">${query}</div>
-                            </div>
+                        
+                        <div class="absolute -bottom-2 right-40 flex gap-2" id="update_lean_canvas">
+                            <button 
+                                onclick="updateLeanCanvasUpdate()"
+                                class="flex items-center justify-center w-6 h-6 rounded-full bg-green-500 hover:bg-green-600 transition-colors focus:outline-none">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </button>
+                            <button 
+                                onclick="noUpdateLeanCanvasUpdate()"
+                                class="flex items-center justify-center w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 transition-colors focus:outline-none">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
                         </div>
-
-
-                        <div class="relative mb-4">
-                        <div class="flex relative justify-start mb-4">
-                            <div class="w-4/5 p-3 rounded-lg bg-gray-200 shadow">
-                                <div class="font-bold text-green-600 assistant_user_name">Response:</div>
-                                <div class="markdown-content text-gray-800">
-                                    ${result.response}
-                                </div>
-                            </div>
-                            
-                            <div class="absolute -bottom-2 right-40 flex gap-2" id="update_lean_canvas">
-                                <button 
-                                    onclick="updateLeanCanvasUpdate()"
-                                    class="flex items-center justify-center w-6 h-6 rounded-full bg-green-500 hover:bg-green-600 transition-colors focus:outline-none">
-                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                </button>
-                                <button 
-                                    onclick="noUpdateLeanCanvasUpdate()"
-                                    class="flex items-center justify-center w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 transition-colors focus:outline-none">
-                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>`;
-                    }
-                    // assistant names: Investor, cofounder
-                    updateAssistantName();
-                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-                    // Clear the input field
-                    e.target.query.value = '';
-
-                    // format markdown content
-                    convertMarkdownContent();
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('Something went wrong. Please try again.');
-                } finally {
-                    // Re-enable the button and hide the loading indicator
-                    submitButton.disabled = false;
-                    loadingIndicator.classList.add('hidden');
+                    </div>`;
                 }
-            };
+                // assistant names: Investor, cofounder
+                updateAssistantName();
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-            async function regenerateSummary() {
-                // Show the spinner
-                const spinnerOverlay = document.getElementById('spinner-overlay');
-                spinnerOverlay.classList.remove('hidden');
-                spinnerOverlay.classList.add('flex');
+                // Clear the input field
+                e.target.query.value = '';
 
-                // Extract the source from the current URL
-                const currentUrl = window.location.href;
-                const source = currentUrl.split('/').pop();
-
-                try {
-                    // Make the POST request
-                    const response = await fetch('/regenerate_summary', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ source })
-                    });
-
-                    console.log('response', response);
-
-                    // Parse the response
-                    const result = await response.json();
-
-                    console.log('result', result);
-
-                    // Check if the server provided a redirect URL
-                    if (result.status === 'success' && result.redirect_url) {
-                        // Navigate to the redirect URL
-                        window.location.href = result.redirect_url;
-                    } else {
-                        console.error('Failed to regenerate summary:', result);
-                    }
-                } catch (error) {
-                    console.error('Error during summary regeneration:', error);
-                } finally {
-                    // Hide the spinner (if still on the same page)
-                    spinnerOverlay.classList.add('hidden');
-                    spinnerOverlay.classList.remove('flex');
-                }
+                // format markdown content
+                convertMarkdownContent();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Something went wrong. Please try again.');
+            } finally {
+                // Re-enable the button and hide the loading indicator
+                submitButton.disabled = false;
+                loadingIndicator.classList.add('hidden');
             }
-        
+        };
+
+        async function regenerateSummary() {
+            // Show the spinner
+            const spinnerOverlay = document.getElementById('spinner-overlay');
+            spinnerOverlay.classList.remove('hidden');
+            spinnerOverlay.classList.add('flex');
+
+            // Extract the source from the current URL
+            const currentUrl = window.location.href;
+            const source = currentUrl.split('/').pop();
+
+            try {
+                // Make the POST request
+                const response = await fetch('/regenerate_summary', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ source })
+                });
+
+                console.log('response', response);
+
+                // Parse the response
+                const result = await response.json();
+
+                console.log('result', result);
+
+                // Check if the server provided a redirect URL
+                if (result.status === 'success' && result.redirect_url) {
+                    // Navigate to the redirect URL
+                    window.location.href = result.redirect_url;
+                } else {
+                    console.error('Failed to regenerate summary:', result);
+                }
+            } catch (error) {
+                console.error('Error during summary regeneration:', error);
+            } finally {
+                // Hide the spinner (if still on the same page)
+                spinnerOverlay.classList.add('hidden');
+                spinnerOverlay.classList.remove('flex');
+            }
+        }
+    
         // model change action
         const modelSelect = document.getElementById('model_selector');
         const chatMessagesDiv = document.getElementById('chat-messages');
@@ -758,17 +699,7 @@
             });
         });
         // convertMarkdownContent();
-        </script>
+    </script>
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
