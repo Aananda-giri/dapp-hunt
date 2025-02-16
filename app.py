@@ -1,18 +1,17 @@
-from sanic import Sanic, response
-from sanic.response import json, html, file
-from sanic_jinja2 import SanicJinja2
+
 import aiohttp
 import asyncio
+from bs4 import BeautifulSoup
 from datetime import datetime
 from fpdf import FPDF
+import json
 import os
+import sanic
+from sanic import Sanic
+from sanic.response import file
+from sanic_jinja2 import SanicJinja2
+
 from typing import Dict, List
-
-from bs4 import BeautifulSoup
-
-# Example usage
-import asyncio
-
 
 
 # Initialize Sanic app
@@ -105,8 +104,13 @@ async def home(request):
 @jinja.template("add_source.html")
 async def add_source(request):
     if request.method == "GET":
-        return {}
-    
+        continue_without_source = request.args.get("continue_without_source", "false")  # Default to "no" if not provided
+        display_source_form = continue_without_source.lower() == 'false' # display source if not continue_without_source
+
+        print(f"display_source_form: {display_source_form}")
+
+        return {"display_source_form": display_source_form}  # Pass it to the template
+
     # Handle POST request
     data = request.json
     source = data.get("source")
@@ -115,50 +119,68 @@ async def add_source(request):
     
     if mongo.exists(source):
         print(f'source: {source} already exists. updating documents')
-        return json({"status": "success", "redirect_url":f"/source/{source}"})
+        return sanic.response.json({"status": "success", "redirect_url":f"/source/{source}"})
 
-    # Crawl URLs and save documents
-    documents = []
-    for url in urls:
-        text_content = await crawl_text_content(url)
-        documents.append({
-            "source": source,
-            "url": url,
-            "text_content": text_content
-        })
-    
-    # print(f"documents:{documents}")
-    
-    # Save documents
-    qa_system.save_documents(documents)
-    
-    questions = {}
-    for key, value in qa_system.questions.items():
-        questions[key] = value.format(source=source)
-
-    # print(questions)
-
-    # Generate summaries for each question
-    print(f'completed crawling. started to generate summaries')
     summaries = {}
-    for q_key, q_template in questions.items():
-        print(f"{q_key}", end='')
-        question = q_template.format(source=source)
-        answer = qa_system.query_documents(
-            query=question,
-            source=source,
-            n_docs=15,
-            bullet_points=True,
-            feed_message_history=False,
-            use_r1=True   # Use deepseek-r1 model
-        )
-        summaries[q_key] = answer
-        print(f': done!')
+    tagline = ''
+    if urls:
+        # Crawl URLs and save documents
+        documents = []
+        for url in urls:
+            text_content = await crawl_text_content(url)
+            documents.append({
+                "source": source,
+                "url": url,
+                "text_content": text_content
+            })
+        
+        # print(f"documents:{documents}")
+        
+        # Save documents
+        qa_system.save_documents(documents)
+        
+        questions = {}
+        for key, value in qa_system.questions.items():
+            questions[key] = value.format(source=source)
 
-        tagline_prompt = "please provide a short, one sentence tagline strictly based on following information: "
-        for key, value in summaries.items():
-            tagline_prompt += f'\n\n ## {key}: \n{value}'
-        tagline = qa_system.query_llm(tagline_prompt)
+        # print(questions)
+
+        # Generate summaries for each question
+        print(f'completed crawling. started to generate summaries')
+        for q_key, q_template in questions.items():
+            print(f"{q_key}", end='')
+            question = q_template.format(source=source)
+            answer = qa_system.query_documents(
+                query=question,
+                source=source,
+                n_docs=15,
+                bullet_points=True,
+                feed_message_history=False,
+                use_r1=True   # Use deepseek-r1 model
+            )
+            summaries[q_key] = answer
+            print(f': done!')
+
+            tagline_prompt = "please provide a short, one sentence tagline strictly based on following information: "
+            for key, value in summaries.items():
+                tagline_prompt += f'\n\n ## {key}: \n{value}'
+            tagline = qa_system.query_llm(tagline_prompt)
+        
+        # Generate PDF
+        pdf_path = generate_pdf(source, summaries)
+    else:
+        # continue without sourc
+        questions = {}
+        for key, value in qa_system.questions.items():
+            questions[key] = value.format(source=source)
+        # print(questions)
+
+        # Dummy summary data
+        for q_key, q_template in questions.items():
+            summaries[q_key] = "• Not enough information."
+        
+        
+
     # print(f'summaries: {summaries}')
     # Save summary to MongoDB
     summary_doc = {
@@ -168,13 +190,10 @@ async def add_source(request):
         "created_at": datetime.now()
     }
     mongo.summary_collection.insert_one(summary_doc)
-    
-    # Generate PDF
-    pdf_path = generate_pdf(source, summaries)
-    
+        
     # /source/{source}
     print(f'redirecting to \"/source/{source}\"')
-    return json({"status": "success", "redirect_url":f"/source/{source}"})
+    return sanic.response.json({"status": "success", "redirect_url":f"/source/{source}"})
 
 
 @app.route("/source/<source>")
@@ -256,7 +275,7 @@ async def regenerate_summary(request):
     
     # /source/{source}
     print(f'redirecting to \"/source/{source}\"')
-    return json({"status": "success", "redirect_url":f"/source/{source}"})
+    return sanic.response.json({"status": "success", "redirect_url":f"/source/{source}"})
 
 @app.route("/update_lean_canvas/<source>", methods=["POST"])
 async def update_lean_canvas(request, source):
@@ -272,7 +291,7 @@ async def update_lean_canvas(request, source):
     # regenerate summary
     qa_system.regenerate_lean_canvas_v2(model_name, source)
 
-    return json({})
+    return sanic.response.json({})
 
 @app.route("/chat/<source>", methods=["POST"])
 async def chat(request, source):
@@ -326,14 +345,14 @@ async def chat(request, source):
         mongo.append_message(source, query, response)
     
     print(f' query: {query}\n response: {response}')
-    return json({"response": response, "show_update_checkbox": show_update_checkbox})
+    return sanic.response.json({"response": response, "show_update_checkbox": show_update_checkbox})
 
 @app.route("/model_change", methods=["GET", "POST"])
 async def model_change(request):
     # Parse JSON data from the request
     data = request.json
     if not data:
-        return json({"status": "error", "message": "No data provided"}, status=400)
+        return sanic.response.json({"status": "error", "message": "No data provided"}, status=400)
     try:
 
         # Extract new model name and source from the payload
@@ -382,14 +401,14 @@ async def model_change(request):
             messages = messages_new
         if not model_name or not source:
             print(f'\n\n error1')
-            return json({"status": "error", "message": "Missing model or source"}, status=400)
+            return sanic.response.json({"status": "error", "message": "Missing model or source"}, status=400)
         print(f'messages:{messages}')
         # Return the result as JSON.
         print(f'\n\n normal return')
-        return json({"status": "success", "messages": messages}, status=200)
+        return sanic.response.json({"status": "success", "messages": messages}, status=200)
     except Exception as ex:
         print(f'error2: {ex}')
-        return json({"status": f"error: {ex}", "message": "No data provided"}, status=400)
+        return sanic.response.json({"status": f"error: {ex}", "message": "No data provided"}, status=400)
     
 @app.route("/download/<source>/summary.pdf")
 async def download_pdf(request, source):
@@ -412,7 +431,7 @@ async def update_text(request):
     
     mongo.update_summary(source, title, text)
     
-    return response.json({"status": "success"})
+    return sanic.response.json({"status": "success"})
 
 @app.route("/delete_source/<source>", methods=["POST"])
 async def delete_source(request, source):
@@ -433,9 +452,8 @@ async def delete_source(request, source):
     for file in pdf_files:
         os.remove(os.path.join('summaries', file))
 
-    return response.json({"status": "success"})
+    return sanic.response.json({"status": "success"})
     
-import json
 @app.route("/download_conversation/<source>", methods=["POST"])
 async def download_conversation(request, source):
     """Download conversation"""
@@ -446,7 +464,7 @@ async def download_conversation(request, source):
     conversations = mongo.get_messages(source, model_name, exclude_timestamp=False)
     
     # Return the JSON directly with proper headers
-    return response.json(
+    return sanic.response.json(
         conversations,
         headers={
             "Content-Disposition": f'attachment; filename="{source}_conversation.json"',
