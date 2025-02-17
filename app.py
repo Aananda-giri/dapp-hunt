@@ -14,6 +14,10 @@ from sanic_jinja2 import SanicJinja2
 from typing import Dict, List
 
 
+
+
+import urllib.parse
+
 # Initialize Sanic app
 app = Sanic("DocumentQA")
 jinja = SanicJinja2(app)
@@ -30,6 +34,8 @@ load_dotenv()
 ATOMA_BEARER = os.environ.get("ATOMA_BEARER")
 assert ATOMA_BEARER != None, "atoma api key is none"
 
+from youtube_functions import get_subtitle, is_youtube_url
+
 # Initialize our DocumentQA system
 qa_system = DocumentQA(
     api_token=ATOMA_BEARER,
@@ -42,13 +48,10 @@ qa_system = DocumentQA(
 # url = "https://example.com"
 # asyncio.run(crawl_text_content(url))
 
-def is_youtube_url(url:str) -> bool:
-    return url.startswith('https://www.youtube.com') or url.startswith('https://www.m.youtube.com') or url.startswith('https://youtu.be') or url.startswith('https://m.youtube.com') or url.startswith('https://youtube.com')
-
 async def crawl_text_content(url: str) -> str:
     """Async function to crawl text content from URL"""
     if is_youtube_url(url):
-        return ''
+        return get_subtitle(url)
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
@@ -155,8 +158,7 @@ async def add_source(request):
                 source=source,
                 n_docs=15,
                 bullet_points=True,
-                feed_message_history=False,
-                use_r1=True   # Use deepseek-r1 model
+                feed_message_history=False
             )
             summaries[q_key] = answer
             print(f': done!')
@@ -286,63 +288,148 @@ async def update_lean_canvas(request, source):
     print(f'data:{data}')
     
     model_name = data.get("model")
+    brainstrom = False
+    if model_name and model_name.startswith('brainstrom'):
+        # brainstrom prompt model (better responses while chatting)
+        # ------------------------
+        brainstrom = True
+
+    model_name = model_name.split('chat-')[-1].split('brainstrom-')[-1]   # one of these values : "o1", "r1", "llama3-70B"
     print(f"Update lean canvas. source:{source}, model: {model_name}")
     
     # regenerate summary
     qa_system.regenerate_lean_canvas_v2(model_name, source)
 
+    # tell user you have regenerated the lean canvas
+    # ----------------------------------------------
+    print('chat!')
+    data = request.json
+    # print(f'data:{data}')
+    query = "<you have updated the lean canvas. please proceed your conversation with user>"
+    
+    summary = mongo.summary_collection.find_one({"source": source})
+    summary = summary["summaries"] if summary else {}
+
+    response = qa_system.query_documents(
+        query=query,
+        source=source,
+        n_docs=100,
+        feed_message_history=True,
+        summary=summary,
+        brainstrom=brainstrom,            # Added for brainstroming (True or False)
+        model_name = model_name    # one of these values : "o1", "r1", "llama3-70B"
+        # use_r1=use_r1               # whether or not use r1 model
+    )
+        
+    
+    # print(f'response: {response}')
+    if brainstrom:
+        mongo.append_brainstrom_message(source, query, response)
+    else:
+        mongo.append_message(source, query, response)
+    
+    print(f' query: {query}\n response: {response}')
+    
+    # ----------------------------------------------
     return sanic.response.json({})
+
+# @app.route("/chat/<source>", methods=["POST"])
+# async def chat(request, source):
+#     """Chat endpoint"""
+#     data = request.json
+#     # print(f'data:{data}')
+#     query = data.get("query")
+#     model = data.get("model")
+#     print(f'data:{data} \n model: {model} \nsource:{source}')
+
+#     if model and model.startswith('brainstrom'):
+#         # brainstrom with model
+#         # ---------------------
+#         use_r1=False
+#         if model.endswith('-r1'):
+#             use_r1=True
+        
+#         summary = mongo.summary_collection.find_one({"source": source})
+#         summary = summary["summaries"] if summary else {}
+
+#         response = qa_system.query_documents(
+#             query=query,
+#             source=source,
+#             n_docs=100,
+#             feed_message_history=True,
+#             summary=summary,
+#             brainstrom=True,    # Added for brainstroming (False by default)
+#             use_r1=use_r1   # whether or not use r1 model
+#         )
+        
+#         # update lean canvas checkbox
+#         show_update_checkbox = qa_system.should_we_show_update_lean_canvas_checkbox(response)
+#         # print(f'response: {response}')
+#         mongo.append_brainstrom_message(source, query, response)
+#     else:
+#         # chat model
+#         # -----------
+
+#         use_r1=False
+#         if model and model.endswith('-r1'):
+#             use_r1=True
+#         response = qa_system.query_documents(
+#             query=query,
+#             source=source,
+#             n_docs=100,
+#             feed_message_history=True,
+#             use_r1=use_r1
+#         )
+#         # print(f'response: {response}')
+#         show_update_checkbox = qa_system.should_we_show_update_lean_canvas_checkbox(response)
+#         mongo.append_message(source, query, response)
+    
+#     print(f' query: {query}\n response: {response}')
+#     return sanic.response.json({"response": response, "show_update_checkbox": show_update_checkbox})
 
 @app.route("/chat/<source>", methods=["POST"])
 async def chat(request, source):
     """Chat endpoint"""
+    print('chat!')
     data = request.json
     # print(f'data:{data}')
     query = data.get("query")
     model = data.get("model")
     print(f'data:{data} \n model: {model} \nsource:{source}')
 
+    brainstrom = False
     if model and model.startswith('brainstrom'):
-        # brainstrom with model
-        # ---------------------
-        use_r1=False
-        if model.endswith('-r1'):
-            use_r1=True
+        # brainstrom prompt model (better responses while chatting)
+        # ------------------------
+        brainstrom = True
+    
+    model_name = model.split('chat-')[-1].split('brainstrom-')[-1]   # one of these values : "o1", "r1", "llama3-70B"
+    print(f'\n\n model_name: {model_name}')
         
-        summary = mongo.summary_collection.find_one({"source": source})
-        summary = summary["summaries"] if summary else {}
+    summary = mongo.summary_collection.find_one({"source": source})
+    summary = summary["summaries"] if summary else {}
 
-        response = qa_system.query_documents(
-            query=query,
-            source=source,
-            n_docs=100,
-            feed_message_history=True,
-            summary=summary,
-            brainstrom=True,    # Added for brainstroming (False by default)
-            use_r1=use_r1   # whether or not use r1 model
-        )
+    response = qa_system.query_documents(
+        query=query,
+        source=source,
+        n_docs=100,
+        feed_message_history=True,
+        summary=summary,
+        brainstrom=brainstrom,            # Added for brainstroming (True or False)
+        model_name = model_name    # one of these values : "o1", "r1", "llama3-70B"
+        # use_r1=use_r1               # whether or not use r1 model
+    )
         
-        # update lean canvas checkbox
-        show_update_checkbox = qa_system.should_we_show_update_lean_canvas_checkbox(response)
-        # print(f'response: {response}')
+    # update lean canvas checkbox
+    show_update_checkbox = qa_system.should_we_show_update_lean_canvas_checkbox(response)
+    print('show_update_checkbox: {show_update_checkbox}')
+    # print(f'response: {response}')
+    
+    if brainstrom:
         mongo.append_brainstrom_message(source, query, response)
     else:
-        # chat model
-        # -----------
-
-        use_r1=False
-        if model and model.endswith('-r1'):
-            use_r1=True
-        response = qa_system.query_documents(
-            query=query,
-            source=source,
-            n_docs=100,
-            feed_message_history=True,
-            use_r1=use_r1
-        )
-        # print(f'response: {response}')
-        show_update_checkbox = qa_system.should_we_show_update_lean_canvas_checkbox(response)
         mongo.append_message(source, query, response)
+    
     
     print(f' query: {query}\n response: {response}')
     return sanic.response.json({"response": response, "show_update_checkbox": show_update_checkbox})
@@ -435,7 +522,14 @@ async def update_text(request):
 
 @app.route("/delete_source/<source>", methods=["POST"])
 async def delete_source(request, source):
-    """Delete source"""
+    """Delete source
+    
+    # decode text
+    source = new%20project  # source given by front end
+    urllib.parse.unquote(source) = "new project"
+    
+    """
+    source = urllib.parse.unquote(source)
     print(f'\n\ndeleting source: {source}')
 
     # delete summary collection
