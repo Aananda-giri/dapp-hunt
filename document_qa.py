@@ -162,7 +162,7 @@ class DocumentQA:
         text = document['text_content']
         chunks = []
         start = 0
-        while start < len(document):
+        while start < len(document['text_content']):
             end = start + self.chunk_size
             chunk = {
                 'source': document['source'],
@@ -205,7 +205,7 @@ class DocumentQA:
         if all_chunks:
             self.mongo.collection.insert_many(all_chunks)
 
-    def search_documents(self, source: str, n: int = 100) -> List[Dict]:
+    def search_documents(self, source: str, n: int = 15) -> List[Dict]:
         """
         todo: full text search instead of find
         Search for most relevant documents from a specific source
