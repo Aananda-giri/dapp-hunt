@@ -110,6 +110,9 @@ sudo systemctl restart app
 
 # View logs
 sudo journalctl -u app
+
+# Clear logs (keep 1MB)
+sudo journalctl --vacuum-size=1M
 ```
 
 This will:
