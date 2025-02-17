@@ -1,4 +1,5 @@
 atoma-sdk
+beautifulsoup4
 aiohttp
 fpdf
 gunicorn
