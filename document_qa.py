@@ -2,6 +2,7 @@ import requests
 import json, re
 from typing import List, Dict, Optional
 from pymongo import MongoClient
+from mongo import Mongo
 
 from a16z.brainstrom_prompt import get_brainstrom_prompt
 from atoma_sdk import AtomaSDK
@@ -11,10 +12,24 @@ load_dotenv()
 
 assert os.environ.get('ATOMA_BEARER') != None
 
+from openai import OpenAI
+
 class DocumentQA:
-    def __init__(self, api_token: str, mongo, chunk_size: int = 1000, overlap: int = 100):
+    def __init__(self, api_token: str='', mongo='', chunk_size: int = 1000, overlap: int = 100):
+        if not api_token:
+            api_token = os.environ.get('ATOMA_BEARER')
+            assert api_token !=None, "No atoma bearer found in .env"
+        
+        if not mongo:
+            mongo = Mongo()
+            
         self.api_token = api_token
         self.mongo = mongo
+        
+        openai_api_key = os.environ.get('OPENAI_API_KEY')
+        assert openai_api_key !=None, "openai api key not found"
+        self.openai_client = OpenAI(api_key=openai_api_key)
+        
         self.chunk_size = chunk_size
         self.overlap = overlap
         self.api_url = "https://api.atoma.network/v1/chat/completions"
@@ -30,9 +45,11 @@ class DocumentQA:
             "revenue": "How does {source} generate revenue?"
         }
 
-    def query_llm(self, query: str, max_tokens: int = 10000, use_r1=False, include_thinking_text=False) -> str:
+    def query_llm(self, query: str, max_tokens: int = 10000, model_name='gpt-4o', include_thinking_text=False) -> str:
         """
         Send a query to the LLM API and return the response
+
+        * model name is one of these values: "o1", "r1", "llama3-70B"
         """
         with open('prompt.txt','w') as f:
             f.write(query)
@@ -40,7 +57,8 @@ class DocumentQA:
         print(f'query: {query}')
         # query using deepseek r1 model
         #---------------------------
-        if use_r1:
+        if model_name == 'r1':
+            # use deepseek-r1 model
             print(f'using r1 model')
             try:
                 with AtomaSDK(
@@ -62,49 +80,81 @@ class DocumentQA:
             except Exception as ex:
                 print(f' error query llm: {ex}')
                 return f"error query llm: {ex}"
-        print(f'using llama3 model')
-        # query using llama3 model
-        #---------------------------
+        elif model_name == 'llama3-70B':
+            print(f'using llama3 model')
+            # query using llama3 model
+            #---------------------------
 
-        # # Add current message to conversation history
-        # self.conversation_history.append({
-        #     "role": "user", 
-        #     "content": message
-        # })
-        # with open('query.txt','a') as f:
-        #     f.write(query)
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_token}"
-        }
-        
-        payload = {
-            "stream": False,
-            "model": "meta-llama/Llama-3.3-70B-Instruct",
-            "messages": [{
-                "role": "user",
-                "content": query
-            }],
-            "max_tokens": max_tokens
-        }
-        
-        try:
-            response = requests.post(self.api_url, headers=headers, data=json.dumps(payload))
-            # response = requests.post(self.api_url, headers=headers, json=payload)
-            response.raise_for_status()
-            
-            # Parse and store the assistant's response
-            result = response.json()
-            assistant_message = result['choices'][0]['message']['content']
-            
-            # # Add assistant's response to conversation history
+            # # Add current message to conversation history
             # self.conversation_history.append({
-            #     "role": "assistant", 
-            #     "content": assistant_message
+            #     "role": "user", 
+            #     "content": message
             # })
-            return assistant_message
-        except requests.RequestException as e:
-            return f"Error: {str(e)}"
+            # with open('query.txt','a') as f:
+            #     f.write(query)
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.api_token}"
+            }
+            
+            payload = {
+                "stream": False,
+                "model": "meta-llama/Llama-3.3-70B-Instruct",
+                "messages": [{
+                    "role": "user",
+                    "content": query
+                }],
+                "max_tokens": max_tokens
+            }
+            
+            try:
+                response = requests.post(self.api_url, headers=headers, data=json.dumps(payload))
+                # response = requests.post(self.api_url, headers=headers, json=payload)
+                response.raise_for_status()
+                
+                # Parse and store the assistant's response
+                result = response.json()
+                assistant_message = result['choices'][0]['message']['content']
+                
+                # # Add assistant's response to conversation history
+                # self.conversation_history.append({
+                #     "role": "assistant", 
+                #     "content": assistant_message
+                # })
+                return assistant_message
+            except requests.RequestException as e:
+                return f"Error: {str(e)}"
+        
+        elif model_name in ["gpt-4o", "gpt-4o-mini", "o3-mini", "o1"]:
+            print(f'one of gpt models. using {model_name} model')
+
+            completion = self.openai_client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {
+                        "role": "user",
+                        "content": query
+                    }
+                ]
+            )
+
+            # print(completion.choices[0].message.content)
+            return completion.choices[0].message.content
+        else:
+            print(f'using Default model:gpt-4o model')
+            completion = self.openai_client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {
+                        "role": "user",
+                        "content": query
+                    }
+                ]
+            )
+            # print(completion.choices[0].message.content)
+            return completion.choices[0].message.content
 
     def split_document(self, document: Dict) -> List[Dict]:
         """Split document into overlapping chunks"""
@@ -167,7 +217,7 @@ class DocumentQA:
         
         return list(cursor)
 
-    def query_documents(self, query: str, source: str, n_docs: int = 100, bullet_points:bool = False, feed_message_history:bool=False, summary={}, brainstrom=False, use_r1=False) -> str:
+    def query_documents(self, query: str, source: str, n_docs: int = 100, bullet_points:bool = False, feed_message_history:bool=False, summary={}, brainstrom=False, model_name='gpt-4o') -> str:
         """# Added for brainstroming (False by default)
         Complete pipeline: search documents and query LLM with context
         """
@@ -178,9 +228,10 @@ class DocumentQA:
         context = "\n\n".join([doc['text_content'] for doc in relevant_docs])
         
         if brainstrom:
+            # brainstrom prompt for chat interface
             prompt = get_brainstrom_prompt(source, context)
-        
         elif bullet_points:
+            # bullet points for lean canvas
             prompt = f"""please give very short response (not more than few sentences) You are a research-focused chatbot engaging in a conversation with a human. \n\n Your task is to provide professional and detailed answers to questions based strictly on the given context and messages history related to {source}.\n\n If the context or message history does not contain sufficient information to answer the question, clearly inform the user with very short message. Feel free to use the information user has provided in previous chat for answering new questions. Please answers in short bullet points which we can put in bullet points. Please respond with very short one sentence response if Question is actually suggestion or additional information. \n\nBelow is the context: \n\nContext: \n\n{context} \n\n"""
         else:
             # Prepare prompt with context and query
@@ -209,7 +260,7 @@ class DocumentQA:
         prompt += f"\n\n user: {query}"
         
         # Get LLM response
-        return self.query_llm(prompt, use_r1=use_r1)
+        return self.query_llm(prompt, model_name=model_name)
     
     def should_we_show_update_lean_canvas_checkbox(self, assistant_message):
         # update checkbox is checkbox right below message with which you can update the lean canvas.
@@ -251,7 +302,7 @@ class DocumentQA:
 
 
         ## Add lean canvas summary to prompt
-        summary = mongo.summary_collection.find_one({"source": source})
+        summary = self.mongo.summary_collection.find_one({"source": source})
         summary = summary["summaries"] if summary else {}
         import json
         prompt += f'''## Previous summary
@@ -280,7 +331,7 @@ class DocumentQA:
 ```
 
         '''
-        response = self.query_llm(prompt, use_r1=True)
+        response = self.query_llm(prompt, model_name=model_name)
         # Remove code block markers
         cleaned_text = re.sub(r"^```json\n|\n```$", "", response.strip())
 

@@ -44,7 +44,7 @@
     </div>
 
     <div id="update-summary-spinner-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center z-50 text-white text-lg font-bold">
-        Updating summary (might take ~1 min.s)
+        Updating Lean canvas (might take ~1 min.s)
         <div class="w-16 h-16 mt-4 border-4 border-t-4 border-t-transparent border-white rounded-full animate-spin"></div>
     </div>
     
@@ -159,10 +159,27 @@
             <h2 class="text-3xl font-bold mb-6 text-gray-900 border-b-2 pb-2">Discussion</h2>
             <div class="flex justify-between items-center mb-8">
                 <select name="model" id="model_selector" class="p-2 mb-8 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    
+                    <!-- added openai models -->
+                    <option style="background-color: #d4f7dc;" value="brainstrom-gpt-4o">investor-gpt-4o</option>
+                    <option style="background-color: #d4f7dc;" value="brainstrom-gpt-4o-mini">investor-gpt-4o-mini</option>
+                    <option style="background-color: #d4f7dc;" value="brainstrom-o3-mini">investor-o3-mini</option>
+                    <option style="background-color: #d4f7dc;" value="brainstrom-o1">investor-o1</option>
+                    <!-- ------------------- -->
+                    
                     <option value="brainstrom-r1">investor-r1</option>
                     <option value="brainstrom-llama3-70B">investor-llama3-70B</option>
+                    
+                    <!-- added openai models -->
+                    <option style="background-color: #d4f7dc;" value="chat-gpt-4o">cofounder-gpt-4o</option>
+                    <option style="background-color: #d4f7dc;" value="chat-gpt-4o-mini">cofounder-gpt-4o-mini</option>
+                    <option style="background-color: #d4f7dc;" value="chat-o3-mini">cofounder-o3-mini</option>
+                    <option style="background-color: #d4f7dc;" value="chat-o1">cofounder-o1</option>
+                    <!-- ------------------- -->
+                    
                     <option value="chat-r1">cofounder-r1</option>
                     <option value="chat-llama3-70B">cofounder-llama3-70B</option>
+
                 </select>
                 <button onclick="downloadConversation();" class="bg-green-200 rounded hover:bg-gray-300 px-5 py-3 flex items-center text-lg">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6 mr-3">
@@ -265,6 +282,12 @@
                 document.getElementById('update_lean_canvas').style.display='none'; // none is
             }
             async function updateLeanCanvasUpdate() {
+                
+                // Show the spinner
+                const spinnerOverlay = document.getElementById('update-summary-spinner-overlay');
+                spinnerOverlay.classList.remove('hidden');
+                spinnerOverlay.classList.add('flex');
+                
                 // hide
                 document.getElementById('update_lean_canvas').style.display='none'; // none is
                 const currentUrl = window.location.href;
@@ -284,10 +307,6 @@
                     const result = await response.json();
                     console.log('result', result);
                     
-                    // Show the spinner
-                    const spinnerOverlay = document.getElementById('update-summary-spinner-overlay');
-                    spinnerOverlay.classList.remove('hidden');
-                    spinnerOverlay.classList.add('flex');
                     // todo: Reload the page
                     location.reload();
                     // todo: sanic app listening to this api call.
@@ -490,6 +509,7 @@
                 const messagesDiv = document.getElementById('chat-messages');
                 
                 if (result.show_update_checkbox){
+                    console.log(`show update checkbox is true <this should be true: ${result.show_update_checkbox}>`);
                     messagesDiv.innerHTML += `
                     <div class="flex justify-end mb-4">
                         <div class="w-4/5 p-3 rounded-lg bg-white shadow">
@@ -508,10 +528,29 @@
                                 </div>
                             </div>
                         </div>
+
+                        
+                        <div class="absolute -bottom-2 right-40 flex gap-2" id="update_lean_canvas">
+                            <button 
+                                onclick="updateLeanCanvasUpdate()"
+                                class="flex items-center justify-center w-6 h-6 rounded-full bg-green-500 hover:bg-green-600 transition-colors focus:outline-none">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </button>
+                            <button 
+                                onclick="noUpdateLeanCanvasUpdate()"
+                                class="flex items-center justify-center w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 transition-colors focus:outline-none">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                         `;    
                     // document.getElementById('update_lean_canvas').style.display='';
                 } else {
+                    console.log(`show update checkbox is false . <this should be false: ${result.show_update_checkbox}>`);
                     messagesDiv.innerHTML += `
                         <div class="flex justify-end mb-4">
                             <div class="w-4/5 p-3 rounded-lg bg-white shadow">
@@ -529,23 +568,6 @@
                             <div class="markdown-content text-gray-800">
                                 ${result.response}
                             </div>
-                        </div>
-                        
-                        <div class="absolute -bottom-2 right-40 flex gap-2" id="update_lean_canvas">
-                            <button 
-                                onclick="updateLeanCanvasUpdate()"
-                                class="flex items-center justify-center w-6 h-6 rounded-full bg-green-500 hover:bg-green-600 transition-colors focus:outline-none">
-                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                </svg>
-                            </button>
-                            <button 
-                                onclick="noUpdateLeanCanvasUpdate()"
-                                class="flex items-center justify-center w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 transition-colors focus:outline-none">
-                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                </svg>
-                            </button>
                         </div>
                     </div>`;
                 }
