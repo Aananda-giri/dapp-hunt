@@ -100,6 +100,28 @@ async def home(request):
         ]))
     return {"sources": sources}
 
+@app.route("/dashboard")
+@jinja.template("dashboard.html")
+async def dashboard(request):
+    """Home page listing all sources"""
+    # sources = mongo.summary_collection.distinct("source")
+    sources = list(mongo.summary_collection.aggregate([
+            {"$group": {"_id": "$source", "tagline": {"$first": "$tagline"}}},
+            {"$project": {"_id": 0, "source": "$_id", "tagline": 1}}
+        ]))
+    return {"sources": sources}
+
+@app.route("/landing")
+@jinja.template("landing.html")
+async def landing(request):
+    """Home page listing all sources"""
+    # sources = mongo.summary_collection.distinct("source")
+    sources = list(mongo.summary_collection.aggregate([
+            {"$group": {"_id": "$source", "tagline": {"$first": "$tagline"}}},
+            {"$project": {"_id": 0, "source": "$_id", "tagline": 1}}
+        ]))
+    return {"sources": sources}
+
 @app.route("/add_source", methods=["GET", "POST"])
 @jinja.template("add_source.html")
 async def add_source(request):
