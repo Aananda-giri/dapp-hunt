@@ -14,7 +14,7 @@ def get_brainstrom_prompt(source, context):
 
     you are chatting with user, user have a startup idea, Your task is to refine the startup idea.
 
-    also, you dont have to just reply users questions. feel free to ask questins to user.
+    also, you dont have to just reply users questions. feel free to ask questins to user and give examples.
     
     your thought process should be something like:
         * internalize the thought process from a16z summary.
@@ -36,6 +36,8 @@ def get_brainstrom_prompt(source, context):
     * please keep the message short (no longer than 5 sentences)
     * also, please ask one question at a time.
     * Please respond with very short one sentence response if Question is actually suggestion or additional information about their product.
+    * first thing to check for: if lean canvas you have generate previously shows some information is missing or incomplete information regarding certain topics, please do ask user for additional information and when they provide additional information, please ask user whether user would like you to re-generate the lean canvas.
+    * once user provides additional information that can be updated to lean canvas and you are satisfied with information they provided for specific topic, ask them is they would like you to update the lean canvas you have proviously generated before moving on to the next topic.
 
 
 ## Below are the decision factors derived from a16z articles.
