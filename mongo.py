@@ -20,18 +20,12 @@ assert os.environ.get('mongo_uri') != None, "mongo_uri not found"
 # Creating mangodb
 from pymongo import MongoClient
 
-
-
-
 from pymongo.mongo_client import MongoClient
-
-
-
 
 class Mongo():
     def __init__(self, db_name='dapp-hunt', collection_name="web_pages", local=False):
         self.uri=os.environ.get('mongo_uri')
-        
+
         # Create a connection using MongoClient. You can import MongoClient or use pymongo.MongoClient
         self.client = MongoClient(self.uri, server_api=ServerApi('1'))
         
@@ -43,6 +37,9 @@ class Mongo():
         # # one time operation
         # self.collection.create_index('url', unique=True)
         self.collection.create_index('source')
+
+        # to perform full text search, we must create a text index on a collection.
+        self.collection.create_index([("text_content", "text")])
 
 
         # message_collection
@@ -116,6 +113,7 @@ class Mongo():
         else:
             print("Document updated successfully.")
         # list(messages_collection.find({}))
+    
     def append_brainstrom_message(self, source, query, response):
         
         '''
@@ -167,6 +165,7 @@ class Mongo():
             self.summary_collection.update_one(query, update, upsert=True)
         except Exception as e:
             print(f' failed to update summary for {source} with title: {title} and new_text: {new_text[:50]}...\n error:{e}')
+    
     def get_messages(self, source, model_name, exclude_timestamp=True):
         """
         * returns only query and response
@@ -211,23 +210,23 @@ class Mongo():
                 message['timestamp'] = str(message['timestamp'])
                 messages_new.append(message)
         return messages_new
-    def update_summary(self, source, summaries):
-        created_at= datetime.now()
+    # def update_summary(self, source, summaries):
+    #     created_at= datetime.now()
         
-        # Define the update operation
-        update = {
-            "$set": {
-                "summaries": summaries,
-                "created_at": created_at
-            }
-        }
+    #     # Define the update operation
+    #     update = {
+    #         "$set": {
+    #             "summaries": summaries,
+    #             "created_at": created_at
+    #         }
+    #     }
     
-        # update if exists, create new otherwise
-        query = {"source": source}
+    #     # update if exists, create new otherwise
+    #     query = {"source": source}
 
-        # Use update_one with upsert=True
-        response = self.summary_collection.update_one(query, update, upsert=True)
-        print(response)
+    #     # Use update_one with upsert=True
+    #     response = self.summary_collection.update_one(query, update, upsert=True)
+    #     print(response)
 if __name__=="__main__":
     # delete all data and create unique index for field: 'url'
     mongo = Mongo()
