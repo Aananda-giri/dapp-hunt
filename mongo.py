@@ -25,7 +25,6 @@ from pymongo.mongo_client import MongoClient
 class Mongo():
     def __init__(self, db_name='dapp-hunt', collection_name="web_pages", local=False):
         self.uri=os.environ.get('mongo_uri')
-
         # Create a connection using MongoClient. You can import MongoClient or use pymongo.MongoClient
         self.client = MongoClient(self.uri, server_api=ServerApi('1'))
         

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PitchReady Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+  <!-- Navbar -->
+  <nav class="bg-white shadow-md">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center">
+        <img src="https://cdn.dribbble.com/userupload/17866585/file/original-8790f17854ac67ff843423bab00dc0cd.png?resize=400x0" alt="Logo" class="h-10 w-10 object-cover object-center">
+        <a href="/landing" class="ml-3 text-2xl font-semibold text-gray-800">PitchReady</a>
+      </div>
+      <button class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+        + Create New Project
+      </button>
+    </div>
+  </nav>
+
+  <div class="flex mx-auto max-w-7xl mt-8">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white h-screen shadow-lg p-6">
+      <h3 class="text-lg font-semibold text-gray-700 mb-4">Dashboard</h3>
+      <ul class="space-y-2">
+        <li class="px-4 py-2 bg-gray-100 rounded-md"><a href="#my-projects" class="block">📂 Projects</a></li>
+        <li class="px-4 py-2 hover:bg-gray-100 rounded-md"><a href="#downloads" class="block">📥 Downloads</a></li>
+        <li class="px-4 py-2 hover:bg-gray-100 rounded-md"><a href="#canvas-format" class="block">🖼 Canvas Format</a></li>
+        <li class="px-4 py-2 hover:bg-gray-100 rounded-md"><a href="#ai-bots" class="block">🤖 AI Co-Founder</a></li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-8">
+      <!-- Projects Section -->
+      <section id="my-projects">
+        <h2 class="text-3xl font-bold text-gray-800 mb-6">Recently Added Projects</h2>
+        <div class="grid grid-cols-3 gap-6">
+          <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-xl font-semibold text-blue-700">FinTech X</h3>
+            <p class="text-gray-600 mt-2">AI-driven financial planning tool.</p>
+            <button class="mt-4 text-blue-600 hover:underline">View Canvas →</button>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-xl font-semibold text-blue-700">HealthAI</h3>
+            <p class="text-gray-600 mt-2">AI-powered health monitoring solution.</p>
+            <button class="mt-4 text-blue-600 hover:underline">View Canvas →</button>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-xl font-semibold text-blue-700">EduSmart</h3>
+            <p class="text-gray-600 mt-2">Personalized AI tutor for students.</p>
+            <button class="mt-4 text-blue-600 hover:underline">View Canvas →</button>
+          </div>
+        </div>
+      </section>
+      
+      <!-- AI Co-Founder Section -->
+      <!-- <section id="ai-bots" class="mt-12">
+        <h2 class="text-3xl font-bold text-gray-800 mb-6">AI Co-Founder & Investor Bot</h2>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <p class="text-gray-600">Our AI-powered co-founder and investor bot ask relevant questions, challenge assumptions, and refine your startup idea in real-time.</p>
+          <button class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Start Brainstorming</button>
+        </div>
+      </section> -->
+  <!-- Canvas Section -->
+<section id="canvas-format" class="mt-12">
+  <h2 class="text-3xl font-bold text-gray-800 mb-6">Your Canvas Format</h2>
+  <div class="grid grid-cols-2 gap-6">
+    <div class="bg-white p-6 rounded-lg shadow-md">
+      <h3 class="text-xl font-semibold text-gray-700">Problem</h3>
+      <p class="text-gray-600">Define the problem you are solving.</p>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-md">
+      <h3 class="text-xl font-semibold text-gray-700">Solution</h3>
+      <p class="text-gray-600">How does your product solve the problem?</p>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-md">
+      <h3 class="text-xl font-semibold text-gray-700">Revenue Model</h3>
+      <p class="text-gray-600">How will your business make money?</p>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-md">
+      <h3 class="text-xl font-semibold text-gray-700">Key Metrics</h3>
+      <p class="text-gray-600">What success metrics do you track?</p>
+    </div>
+  </div>
+
+  <!-- Add New Element Button -->
+  <div class="mt-6">
+    <button onclick="openModal()" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
+      + Customize Your Canvas
+    </button>
+  </div>
+</section>
+
+<!-- Modal -->
+<div id="canvasModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+  <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">Add Canvas Element</h2>
+    <label class="block text-gray-700">Element Name</label>
+    <input type="text" id="elementName" class="w-full px-4 py-2 border rounded-md mt-2" placeholder="e.g. Market Opportunity">
+    
+    <label class="block text-gray-700 mt-4">Prompt</label>
+    <input type="text" id="elementPrompt" class="w-full px-4 py-2 border rounded-md mt-2" placeholder="e.g. Describe the market opportunity...">
+
+    <div class="flex justify-end mt-4">
+      <button onclick="closeModal()" class="bg-gray-400 text-white px-4 py-2 rounded-md mr-2 hover:bg-gray-500">
+        Cancel
+      </button>
+      <button onclick="saveElement()" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
+        Save
+      </button>
+    </div>
+  </div>
+</div>
+
+
+    </main>
+  </div>
+</body>
+
+<script>
+  function openModal() {
+    document.getElementById("canvasModal").classList.remove("hidden");
+  }
+
+  function closeModal() {
+    document.getElementById("canvasModal").classList.add("hidden");
+  }
+
+  function saveElement() {
+    const name = document.getElementById("elementName").value;
+    const prompt = document.getElementById("elementPrompt").value;
+
+    if (name && prompt) {
+      // Create new canvas element
+      const container = document.createElement("div");
+      container.classList.add("bg-white", "p-6", "rounded-lg", "shadow-md");
+
+      const title = document.createElement("h3");
+      title.classList.add("text-xl", "font-semibold", "text-gray-700");
+      title.textContent = name;
+
+      const description = document.createElement("p");
+      description.classList.add("text-gray-600");
+      description.textContent = prompt;
+
+      container.appendChild(title);
+      container.appendChild(description);
+
+      // Append to grid
+      document.querySelector("#canvas-format .grid").appendChild(container);
+
+      // Close modal
+      closeModal();
+    } else {
+      alert("Please enter both a name and a prompt.");
+    }
+  }
+</script>
+</html>
