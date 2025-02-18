@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ source | capitalize }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-md p-4">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800">{{ source | capitalize }}</h1>
+            <a href="/dashboard" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Dashboard</a>
+        </div>
+    </nav>
+
+    <!-- Main Layout -->
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row mt-6">
+
+    
+            <!-- Sidebar (Contains Everything) -->
+            <aside class="w-full md:w-1/3 bg-white p-6 mb-20 rounded-lg shadow-md">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">Project Info</h2>
+        
+                <!-- Add New Source Section -->
+                <form id="updateForm">
+                    <label class="block text-gray-700 mb-2">Product/Company Name</label>
+                    <input id="sourceInput" type="text" required class="w-full p-2 border rounded mb-4" placeholder="{{ source | capitalize }}">
+                    <label class="block text-gray-700 mb-2">Bot Purpose</label>
+                    <select id="projectPurpose" class="w-full px-3 py-2 border border-gray-300 rounded-md mb-4">
+                        <option value="due_diligence">Due Diligence for Investors</option>
+                        <option value="brainstorm">Brainstorm for founders</option>
+                    </select>
+                    
+                    <button type="submit" id="submitButton" class="bg-green-500 text-white px-4 py-2 rounded w-full mb-8 hover:bg-green-600">
+                        Update
+                    </button>
+                </form>
+
+                <form id="sourceForm">
+
+                    <h2 class="text-xl font-bold mb-4 text-gray-800">Add New Source</h2>
+            
+                    <label class="block text-gray-700 mb-2">Enter URLs</label>
+                    <div id="urlInputs">
+                        <input id="sourceUrl" type="text" required class="w-full p-2 border rounded mb-4" placeholder="Enter URL of resources">
+                    </div>
+        
+                    <button type="submit" id="submitButton" class="bg-green-500 text-white px-4 py-2 rounded w-full mb-8 hover:bg-green-600">
+                        Add Source
+                    </button>
+                </form>
+        
+                <!-- Existing Sources List -->
+                <h2 class="text-xl font-bold mt-6 mb-4 text-gray-800">Existing Sources</h2>
+
+
+
+
+     <div class="space-y-4 max-h-80 ">
+    <!-- Dummy Source 1 -->
+    <div class="flex items-center gap-2">
+        <span class="font-semibold text-lg">1.</span>
+        <div class="bg-gray-100 p-2 rounded-lg shadow-md flex justify-between items-center border border-gray-300 w-full">
+            <button onclick="window.open('https://example1.com', '_blank')" class="text-blue-600 font-semibold hover:underline">
+                https://example1.com
+            </button>
+            <div class="flex gap-4">
+                <!-- Show Scraped Data Button -->
+                <button onclick="openModal('https://example1.com')" class="bg-blue-500 text-white px-2 py-1  rounded-md hover:bg-blue-600">
+                    Show Data
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="modal-https://example1.com" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h3 class="text-xl font-bold mb-4">https://example1.com</h3>
+            <p class="text-gray-700">This is the scraped data from https://example1.com.</p>
+            <div class="flex justify-end gap-4 mt-4">
+                <button onclick="closeModal('https://example1.com')" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">
+                    Cancel
+                </button>
+                <button onclick="deleteSource('https://example1.com')" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dummy Source 2 -->
+    <div class="flex items-center gap-2">
+        <span class="font-semibold text-lg">2.</span>
+        <div class="bg-gray-100 p-2 rounded-lg shadow-md flex justify-between items-center border border-gray-300 w-full">
+            <button onclick="window.open('https://example2.com', '_blank')" class="text-blue-600 font-semibold hover:underline">
+                https://example2.com
+            </button>
+            <div class="flex gap-4">
+                <!-- Show Scraped Data Button -->
+                <button onclick="openModal('https://example2.com')" class="bg-blue-500 text-white px-2 py-1  rounded-md hover:bg-blue-600">
+                    Show Data
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="modal-https://example2.com" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h3 class="text-xl font-bold mb-4">https://example2.com</h3>
+            <p class="text-gray-700">This is the scraped data from https://example2.com.</p>
+            <div class="flex justify-end gap-4 mt-4">
+                <button onclick="closeModal('https://example2.com')" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">
+                    Cancel
+                </button>
+                <button onclick="deleteSource('https://example2.com')" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dummy Source 3 -->
+    <div class="flex items-center gap-2">
+        <span class="font-semibold text-lg">3.</span>
+        <div class="bg-gray-100 p-2 rounded-lg shadow-md flex justify-between items-center border border-gray-300 w-full">
+            <button onclick="window.open('https://example3.com', '_blank')" class="text-blue-600 font-semibold hover:underline">
+                https://example3.com
+            </button>
+            <div class="flex gap-4">
+                <!-- Show Scraped Data Button -->
+                <button onclick="openModal('https://example3.com')" class="bg-blue-500 text-white px-2 py-1 rounded-md hover:bg-blue-600">
+                    Show Data
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="modal-https://example3.com" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h3 class="text-xl font-bold mb-4">https://example3.com</h3>
+            <p class="text-gray-700 ">This is the scraped data from https://example3.com.</p>
+            <div class="flex justify-end gap-4 mt-4">
+                <button onclick="closeModal('https://example3.com')" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">
+                    Cancel
+                </button>
+                <button onclick="deleteSource('https://example3.com')" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+            </aside>
+
+        
+    
+    
+        
+
+        <!-- Main Section (Source Summary & Chat) -->
+        <main class="w-full md:w-2/3 md:ml-6 mb-20">
+            <!-- Source Summary -->
+            <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                <h2 class="text-2xl font-bold text-center mb-4">Lean Canvas</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {% for key, value in summary.items() %}
+                    <div class="p-4 bg-gray-100 rounded-lg shadow">
+                        <h3 class="font-bold mb-2">{{ key | title }}</h3>
+                        <p class="text-gray-700">{{ value }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Chat Interface -->
+            <div class="bg-white p-6 rounded shadow-md">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">AI Discussion ✨</h2>
+                    <button onclick="downloadConversation();" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                        ⬇️ Download Chat
+                    </button>
+                </div>
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex items-center justify-between w-full">
+                        <select id="model_selector" class="p-2 border border-gray-300 rounded">
+                            <option value="brainstrom-r1">Deepseek-R1</option>
+                            <option value="chat-r1">OpenAI-o3</option>
+                        </select>
+                        <label class="flex items-center space-x-3">
+                            <input type="checkbox" id="private_inference" class="toggle-checkbox h-5 w-5 text-blue-600">
+                            <span class="text-gray-700">Enable Privacy powered by Atoma network</span>
+                        </label></label>
+                    </div>
+                 
+                </div>
+               
+
+                <div id="chat-messages" class="h-64 overflow-y-auto p-4 bg-gray-100 rounded">
+                    {% for message in chat_history %}
+                    <div class="mb-4">
+                        <div class="text-blue-600 font-bold">You:</div>
+                        <div class="text-gray-800">{{ message.query }}</div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="text-green-600 font-bold">Response:</div>
+                        <div class="text-gray-800">{{ message.response }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <form id="chatForm" class="flex gap-4 mt-4">
+                    <input id="chat-input" type="text" class="flex-1 p-2 border border-gray-300 rounded" placeholder="Start conversation..." required>
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Send</button>
+                </form>
+            </div>
+        </main>
+
+    </div>
+    <footer class="bg-gray-900 text-white text-center py-6">
+        <div class="flex justify-center items-center">
+            <img src="https://cdn.dribbble.com/userupload/17866585/file/original-8790f17854ac67ff843423bab00dc0cd.png?resize=400x0" alt="PitchReady Logo" class="h-10 mr-3 rounded-full">
+            <p>&copy; 2025 PitchReady. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+        
+    <script>
+        function openModal(source) {
+            document.getElementById(`modal-${source}`).classList.remove('hidden');
+        }
+    
+        function closeModal(source) {
+            document.getElementById(`modal-${source}`).classList.add('hidden');
+        }
+    
+        async function deleteSource(source) {
+            if (confirm(`Are you sure you want to delete ${source}?`)) {
+                try {
+                    const response = await fetch(`/delete_source/${source}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                    if (!response.ok) throw new Error(`Error: ${response.status}`);
+                    location.reload();
+                } catch (error) {
+                    alert("Something went wrong. Please try again.");
+                }
+            }
+        }
+    </script>
+    <!-- JavaScript -->
+    <script>
+        document.getElementById('sampleButton').onclick = () => {
+            document.getElementById('sourceInput').value = "Google";
+            document.getElementById('urlInputs').innerHTML = `
+                <input type="text" class="w-full p-2 border rounded mb-2" value="https://en.wikipedia.org/wiki/Google">
+                <input type="text" class="w-full p-2 border rounded mb-2" value="https://en.wikipedia.org/wiki/History_of_Google">
+            `;
+        };
+
+        async function downloadConversation() {
+            alert("Downloading conversation...");
+        }
+
+        document.getElementById('chatForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('chat-input').value;
+            alert(`You asked: ${input}`);
+            document.getElementById('chat-input').value = "";
+        };
+    </script>
+
+</body>
+</html>

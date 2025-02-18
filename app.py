@@ -236,6 +236,25 @@ async def source_page(request, source):
         "chat_history": messages,
         "pdf_path": f"/download/{source}/summary.pdf"
     }
+# Experimenting this function
+@app.route("/canvas/<source>")
+@jinja.template("canvas.html")
+async def canvas(request, source):
+    """Individual source page"""
+    summary = mongo.summary_collection.find_one({"source": source})
+    chat_history = mongo.brainstrom_collection.find({'source':source})
+    
+    # Iterate through the cursor to get each document
+    messages = []
+    for message in chat_history:
+        messages.extend(message['messages'])
+    
+    return {
+        "source": source,
+        "summary": summary["summaries"] if summary else {},
+        "chat_history": messages,
+        "pdf_path": f"/download/{source}/summary.pdf"
+    }
 
 @app.route("/regenerate_summary", methods=["GET", "POST"])
 async def regenerate_summary(request):
