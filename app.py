@@ -17,6 +17,7 @@ from typing import Dict, List
 
 
 import urllib.parse
+from urllib.parse import urlparse
 
 # Initialize Sanic app
 app = Sanic("DocumentQA")
@@ -52,7 +53,7 @@ async def crawl_text_content(url: str) -> str:
     """Async function to crawl text content from URL"""
     if is_youtube_url(url):
         return get_subtitle(url)
-
+    
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             html_content = await response.text()
@@ -158,7 +159,8 @@ async def add_source(request):
                 source=source,
                 n_docs=15,
                 bullet_points=True,
-                feed_message_history=False
+                feed_message_history=False,
+                full_text_search=True
             )
             summaries[q_key] = answer
             print(f': done!')
@@ -244,7 +246,8 @@ async def regenerate_summary(request):
             source=source,
             n_docs=15,
             bullet_points=True,
-            feed_message_history=True
+            feed_message_history=True,
+            full_text_search=True
         )
         summaries[q_key] = answer
         print(f': done!')
@@ -317,11 +320,13 @@ async def update_lean_canvas(request, source):
         feed_message_history=True,
         summary=summary,
         brainstrom=brainstrom,            # Added for brainstroming (True or False)
-        model_name = model_name    # one of these values : "o1", "r1", "llama3-70B"
+        model_name = model_name,    # one of these values : "o1", "r1", "llama3-70B"
+        full_text_search=False,
+        include_documents=False
         # use_r1=use_r1               # whether or not use r1 model
     )
         
-    
+    query="yes" # yes in the sense that user clicked on the checkbox saying update the lean canvas.
     # print(f'response: {response}')
     if brainstrom:
         mongo.append_brainstrom_message(source, query, response)
@@ -416,7 +421,8 @@ async def chat(request, source):
         feed_message_history=True,
         summary=summary,
         brainstrom=brainstrom,            # Added for brainstroming (True or False)
-        model_name = model_name    # one of these values : "o1", "r1", "llama3-70B"
+        model_name = model_name,    # one of these values : "o1", "r1", "llama3-70B"
+        full_text_search=True
         # use_r1=use_r1               # whether or not use r1 model
     )
         
@@ -503,7 +509,7 @@ async def download_pdf(request, source):
     # Find the latest PDF for this source
     pdf_files = [f for f in os.listdir('summaries') if f.startswith(source.replace('/', '_'))]
     if not pdf_files:
-        return response.text("PDF not found", status=404)
+        return sanic.response.text("PDF not found", status=404)
     
     latest_pdf = sorted(pdf_files)[-1]
     return await file(f'summaries/{latest_pdf}')
@@ -514,8 +520,9 @@ async def update_text(request):
     title = data.get("title")
     text = data.get("text")
     source = data.get("source")
-    print(f'title: {title} \n text: {text[:100]} \nsource:{source}')
+    print(f'\nsource:{source}\ntitle: {title} \ntext: {text[:100]}...')
     
+    print(f"Type of mongo: {type(mongo)}") # Add this line
     mongo.update_summary(source, title, text)
     
     return sanic.response.json({"status": "success"})
@@ -532,14 +539,17 @@ async def delete_source(request, source):
     source = urllib.parse.unquote(source)
     print(f'\n\ndeleting source: {source}')
 
+    # delete chunks of crawled data from mongo collection
+    mongo.collection.delete_many({'source':source})
+
     # delete summary collection
-    mongo.summary_collection.delete_one({'source':source})
+    mongo.summary_collection.delete_many({'source':source})
     
     # Delete messages collection
-    mongo.messages_collection.delete_one({'source':source})
+    mongo.messages_collection.delete_many({'source':source})
 
     # Delete brainstrom collection
-    mongo.brainstrom_collection.delete_one({'source':source})
+    mongo.brainstrom_collection.delete_many({'source':source})
 
     # Delete pdf files generated
     pdf_files = [f for f in os.listdir('summaries') if f.startswith(source+'_')]
@@ -565,6 +575,231 @@ async def download_conversation(request, source):
             "Content-Type": "application/json"
         }
     )
+
+
+
+# View data for specific source
+# -------------------------------
+
+@app.route("/data/<source>", methods=["GET"])
+@jinja.template("data_preview.html")
+async def get_data(request, source):
+    '''
+    * Get all chunks for given source
+    * return chunks
+    '''
+    source = urllib.parse.unquote(source)
+    print(f'data-preview. source: {source}')
+    try:
+        # Aggregate to group chunks by URL
+        pipeline = [
+            {"$match": {"source": source}},
+            {"$sort": {"chunk_index": 1}},
+            {
+                "$group": {
+                    "_id": "$url",
+                    "chunks": {
+                        "$push": {
+                            "text_content": "$text_content",
+                            "chunk_index": "$chunk_index"
+                        }
+                    }
+                }
+            }
+        ]
+        
+        cursor = mongo.collection.aggregate(pipeline)
+        # results = await cursor.to_list(length=None)
+        results = list(cursor.to_list(length=None))
+        
+        # Convert to JSON-serializable format
+        formatted_results = []
+        for doc in results:
+            formatted_results.append({
+                "url": doc["_id"],
+                "chunks": sorted(doc["chunks"], key=lambda x: x["chunk_index"])
+            })
+        return {"success": True, "data": formatted_results, "source": source}
+    except Exception as e:
+        print(e)
+        return {"success": False, "error": str(e)}
+
+@app.route("/data/<source>", methods=["POST"])
+async def update_data(request, source):
+    try:
+        data = request.json
+        url = data.get("url")
+        chunks = data.get("chunks")
+        
+        if not url or not chunks:
+            return json({"success": False, "error": "Missing required fields"}, status=400)
+        
+        # Delete existing chunks for this URL
+        await app.ctx.collection.delete_many({"source": source, "url": url})
+        
+        # Insert new chunks
+        documents = []
+        for idx, chunk in enumerate(chunks):
+            documents.append({
+                "source": source,
+                "url": url,
+                "text_content": chunk,
+                "chunk_index": idx
+            })
+        
+        if documents:
+            await app.ctx.collection.insert_many(documents)
+        
+        return json({"success": True})
+    except Exception as e:
+        return json({"success": False, "error": str(e)}, status=500)
+
+# update chunk of crawled data
+@app.post("/update-chunk")
+async def update_chunk(request):
+    data = request.json
+    source = urllib.parse.unquote(data.get("source", None))
+    url = urllib.parse.unquote(data.get("url", None))
+    chunk_index = data.get("chunk_index", None)
+    text_content = urllib.parse.unquote(data.get("text_content", None))
+
+    print(f"data:{data}\n\n, source:\"{source}\", url:\"{url}\", chunk_index:\"{chunk_index}\", text_content:\"{text_content}\"")
+
+    # if not all([source, url, chunk_index, text_content]):
+    #     return sanic.response.json({"success": False, "error": "Missing data"}, status=400)
+
+    # update
+    result = mongo.collection.update_one(
+        {"source": source, "url": url, "chunk_index": chunk_index},
+        {"$set": {"text_content": text_content}}
+    )
+    
+    if result.matched_count > 0:
+        print("Update successful")
+        return sanic.response.json({"success": True})
+    else:
+        print("No matching document found")
+        return sanic.response.json({"success": False, "error": "No matching document found"})
+
+# delete chunk of crawled data
+@app.delete("/delete-chunk")
+async def delete_chunk(request):
+    data = request.json
+    source = urllib.parse.unquote(data.get("source", None))
+    url = urllib.parse.unquote(data.get("url", None))
+    chunk_index = data.get("chunk_index", None)
+
+    print(f"Deleting - source:\"{source}\", url:\"{url}\", chunk_index:\"{chunk_index}\"")
+
+    # Delete from MongoDB
+    result = mongo.collection.delete_one({
+        "source": source,
+        "url": url,
+        "chunk_index": chunk_index
+    })
+    
+    if result.deleted_count > 0:
+        print("Delete successful")
+        return sanic.response.json({"success": True})
+    else:
+        print("No matching document found")
+        return sanic.response.json({"success": False, "error": "No matching document found"})
+
+@app.delete("/delete-url")
+async def delete_url(request):
+    data = request.json
+    source = urllib.parse.unquote(data.get("source", None))
+    url = urllib.parse.unquote(data.get("url", None))
+
+    if not all([source, url]):
+        return sanic.response.json({"success": False, "error": "Missing required data"}, status=400)
+
+    print(f"Deleting all chunks for - source:\"{source}\", url:\"{url}\"")
+
+    try:
+        # Delete all chunks for this URL from MongoDB
+        result = mongo.collection.delete_many({
+            "source": source,
+            "url": url
+        })
+        
+        if result.deleted_count > 0:
+            print(f"Delete successful - removed {result.deleted_count} chunks")
+            return sanic.response.json({
+                "success": True,
+                "message": f"Deleted {result.deleted_count} chunks"
+            })
+        else:
+            print("No matching documents found")
+            return sanic.response.json({
+                "success": False, 
+                "error": "No matching documents found"
+            })
+    except Exception as e:
+        print(f"Error deleting URL: {str(e)}")
+        return sanic.response.json({
+            "success": False,
+            "error": f"Database error: {str(e)}"
+        }, status=500)
+
+
+def is_url(text):
+    """
+    Checks if the given text is a valid URL.
+
+    Args:
+        text: The string to check.
+
+    Returns:
+        True if the text is a valid URL, False otherwise.
+    """
+    try:
+        result = urlparse(text)
+        return all([result.scheme, result.netloc])
+    except:
+        return False
+
+# add new url or data to existing knowledge base
+@app.post("/add-data")
+async def add_data(request):
+    data = request.json
+    source = urllib.parse.unquote(data.get("source", None))
+    new_input = urllib.parse.unquote(data.get("new_input", None))
+    
+    print(f"source:{source}\n\n, new_input:\"{new_input}\"")
+    
+    try:
+        if is_url(new_input):
+            # new input is url
+            print(f'new_input is url')
+            documents = []
+            text_content = await crawl_text_content(new_input)
+            documents.append({
+                "source": source,
+                "url": new_input,
+                "text_content": text_content
+            })
+            
+            # print(f"documents:{documents}")
+            
+            # Save documents
+            qa_system.save_documents(documents)
+
+        else:
+            print(f'new_input is text')
+            document = {
+                    'source': source,
+                    'url': "mannual_input",
+                    'text_content': new_input,
+                    'chunk_index': mongo.collection.count_documents({"source":source, "url": "mannual_input"})  # count of Existing documents with source, url': "mannual_input"
+                }
+            mongo.collection.insert_one(document)
+        return sanic.response.json({"success": True})
+    except Exception as ex:
+        print(f' error adding new data: {ex}')
+        return sanic.response.json({"success": False, "error": "No matching document found"})
+
+
 if __name__ == "__main__":
     os.makedirs('summaries', exist_ok=True)
     os.makedirs('conversations', exist_ok=True)

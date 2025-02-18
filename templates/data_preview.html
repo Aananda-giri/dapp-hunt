@@ -1,0 +1,498 @@
+<!-- data_preview.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Viewer - {{ source }}</title>
+  <style>
+    :root {
+        --primary-color: #2563eb;
+        --danger-color: #dc2626;
+        --success-color: #059669;
+        --border-color: #e5e7eb;
+        --background-light: #f9fafb;
+        --text-primary: #1f2937;
+        --text-secondary: #4b5563;
+    }
+
+    body {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px;
+        background-color: var(--background-light);
+        color: var(--text-primary);
+    }
+
+    h1 {
+        font-size: 2rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .url-section {
+        background: white;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .url-header {
+        background-color: var(--background-light);
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .chunk-container {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    textarea.chunk {
+        width: 100%;
+        min-height: 120px;
+        padding: 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        font-family: 'Menlo', 'Monaco', monospace;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        resize: vertical;
+        margin-bottom: 1rem;
+        background-color: var(--background-light);
+    }
+
+    textarea.chunk:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .button-group {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .btn {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: none;
+    }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #1d4ed8;
+    }
+
+    .btn-danger {
+        background-color: var(--danger-color);
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background-color: #b91c1c;
+    }
+
+    .section-actions {
+        padding: 1rem 1.5rem;
+        background-color: var(--background-light);
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .error {
+        color: var(--danger-color);
+        padding: 1rem;
+        background-color: #fee2e2;
+        border-radius: 6px;
+        margin-top: 1rem;
+    }
+
+    .success {
+        color: var(--success-color);
+        padding: 1rem;
+        background-color: #dcfce7;
+        border-radius: 6px;
+        margin-top: 1rem;
+    }
+</style>
+<style>
+  .url-header {
+      background-color: var(--background-light);
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+  }
+
+  .url-header-content {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+  }
+
+  .toggle-icon {
+      width: 24px;
+      height: 24px;
+      transition: transform 0.3s ease;
+  }
+
+  .url-section.collapsed .toggle-icon {
+      transform: rotate(-90deg);
+  }
+
+  .chunks-wrapper {
+      transition: height 0.3s ease-in-out;
+      overflow: hidden;
+  }
+
+  .url-section.collapsed .chunks-wrapper {
+      height: 0 !important;
+  }
+
+  .url-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+  }
+
+  .chunk-count {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+  }
+
+
+  #new_source_input {
+        padding: 12px 15px; /* Increased padding for larger input */
+        border: 1px solid #ced4da;
+        border-radius: 5px;
+        font-size: 16px; /* Increased font size */
+        width: 300px; /* Fixed width for a more professional look */
+        box-shadow: inset 0 1px 3px rgba(0,0,0,.1); /* Subtle shadow for depth */
+    }
+
+    #new_source_input:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25); /* Blue outline on focus */
+    }
+  
+</style>
+</head>
+<body>
+    <div id="app">
+        <h1>Data Viewer - <span id="sourceTitle">{{ source }}</span></h1>
+        <div id="content">
+            <div class="url-section collapsed">
+                <div class="url-header" onclick="toggleSection('outer_loop_index')">
+                    <div class="url-header-content">
+                        <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                        <div class="url-info">
+                            <span>Add new url/data</span>
+                            <input type="text" id="new_source_input" placeholder="Enter URL or Data here">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="addSource(); event.stopPropagation();">
+                        Add New
+                    </button>
+                </div>
+            </div>
+            {% if success %}
+                {% for item in data %}
+                {% set outer_loop_index = loop.index %}
+                    <div class="url-section collapsed" id="url-section-{{outer_loop_index}}">
+                        <div class="url-header" onclick="toggleSection({{outer_loop_index}})">
+                            <div class="url-header-content">
+                                <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <div class="url-info">
+                                    <span>URL: {{ item.url }}</span>
+                                    <span class="chunk-count">{{ item.chunks|length }} chunks</span>
+                                </div>
+                            </div>
+                            <button class="btn btn-danger" onclick='deleteUrl(`{{ item.url }}`, {{ outer_loop_index }}); event.stopPropagation();'>
+                                Delete URL
+                            </button>
+                        </div>
+                        <div class="chunks-wrapper" id="chunks-wrapper-{{outer_loop_index}}">
+                            {% for chunk in item.chunks %}
+                            <div class="chunk-container">
+                                <textarea 
+                                    id="url-{{outer_loop_index}}-chunk-{{chunk.chunk_index}}" 
+                                    class="chunk source-{{ outer_loop_index }}"
+                                >{{ chunk.text_content }}</textarea>
+                                <div class="button-group">
+                                    <button class="btn btn-primary" onclick='updateChunk(`{{ item.url }}`, {{ outer_loop_index }}, {{ chunk.chunk_index }})'>
+                                        Update Chunk
+                                    </button>
+                                    <button class="btn btn-danger" onclick='deleteChunk(`{{ item.url }}`, {{ outer_loop_index }}, {{ chunk.chunk_index }})'>
+                                        Delete Chunk
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="error">Error loading data.</div>
+            {% endif %}
+        </div>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        function toggleSection(index) {
+            const section = document.getElementById(`url-section-${index}`);
+            const wrapper = document.getElementById(`chunks-wrapper-${index}`);
+            
+            if (section.classList.contains('collapsed')) {
+                // Expand
+                section.classList.remove('collapsed');
+                const height = Array.from(wrapper.children)
+                    .reduce((total, child) => total + child.offsetHeight, 0);
+                wrapper.style.height = height + 'px';
+            } else {
+                // Collapse
+                section.classList.add('collapsed');
+                wrapper.style.height = wrapper.offsetHeight + 'px';
+                // Force reflow
+                wrapper.offsetHeight;
+                wrapper.style.height = '0';
+            }
+        }
+
+        // Add transition end listener to clean up inline height
+        document.addEventListener('DOMContentLoaded', () => {
+            const wrappers = document.querySelectorAll('.chunks-wrapper');
+            wrappers.forEach(wrapper => {
+                wrapper.addEventListener('transitionend', () => {
+                    if (!wrapper.parentElement.classList.contains('collapsed')) {
+                        wrapper.style.height = 'auto';
+                    }
+                });
+            });
+        });
+    </script>
+
+  <!-- Include Axios for update functionality -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
+  <script>
+    function deleteUrl(url, source_index) {
+        // Get the source from the current URL path
+        const source = window.location.pathname.split("/").pop();
+        
+        // Confirm deletion
+        if (!confirm(`Are you sure you want to delete all chunks for URL: ${url}?`)) {
+            return;
+        }
+
+        // Prepare data for request
+        let data = {
+            source: source,
+            url: url
+        };
+
+        // Send DELETE request to Sanic backend
+        fetch('/delete-url', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                // Remove the entire URL section from the frontend
+                let urlSection = document.querySelector(`.url-section:nth-child(${source_index})`);
+                if (urlSection) {
+                    urlSection.remove();
+                }
+                showMessage("URL and associated chunks deleted successfully", "success");
+            } else {
+                showMessage("Delete failed: " + result.error, "error");
+            }
+        })
+        .catch(error => {
+            showMessage("Request failed: " + error, "error");
+        });
+    }
+
+    // Helper function to show messages
+    function showMessage(message, type) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.className = type; // 'success' or 'error'
+        messageDiv.textContent = message;
+        
+        // Clear message after 3 seconds
+        setTimeout(() => {
+            messageDiv.textContent = '';
+            messageDiv.className = '';
+        }, 3000);
+    }
+
+
+    function updateChunk(url, source_index, chunk_index) {
+        // Extract source from the current URL
+        let pathSegments = window.location.pathname.split('/');
+        const source = window.location.pathname.split("/").pop();;
+        
+        // Get the textarea content
+        let textareaId = `url-${source_index}-chunk-${chunk_index}`
+        let textContent = document.getElementById(textareaId)?.value;
+
+        console.log(`source: ${source}, textareaId:${textareaId}, textContent: ${textContent}`);
+        // return;
+        if (!textContent) {
+            alert("Could not find textarea content");
+            return;
+        }
+
+        // Prepare data for request
+        let data = {
+            source: source,
+            url: url,
+            chunk_index: chunk_index,
+            text_content: textContent
+        };
+
+        // Send POST request to Sanic backend
+        fetch('/update-chunk', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert("Update successful");
+            } else {
+                alert("Update failed: " + result.error);
+            }
+        })
+        .catch(error => {
+            alert("Request failed: " + error);
+        });
+    }
+
+    function deleteChunk(url, source_index, chunk_index) {
+        // Extract source from the current URL
+        const source = window.location.pathname.split("/").pop();
+        
+        // Prepare data for request
+        let data = {
+            source: source,
+            url: url,
+            chunk_index: chunk_index
+        };
+
+        // Send DELETE request to Sanic backend
+        fetch('/delete-chunk', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                // Remove the textarea and buttons from the frontend
+                let textareaId = `url-${source_index}-chunk-${chunk_index}`;
+                let textareaElement = document.getElementById(textareaId);
+                if (textareaElement && textareaElement.parentElement) {
+                    textareaElement.parentElement.remove(); // Remove the entire chunk container
+                }
+                alert("Delete successful");
+            } else {
+                alert("Delete failed: " + result.error);
+            }
+        })
+        .catch(error => {
+            alert("Request failed: " + error);
+        });
+    }
+
+    function addSource(){
+        // Extract source from the current URL
+        const source = window.location.pathname.split("/").pop();;
+        
+        const new_input = document.getElementById('new_source_input').value;
+        console.log(`Adding url/data: ${new_input} to source: ${source}`);
+        
+        
+        // return;
+        if (!new_input) {
+            alert("Could not find textarea content");
+            return;
+        }
+
+        // Prepare data for request
+        let data = {
+            source: source,
+            new_input: new_input,
+        };
+
+        // Send POST request to Sanic backend
+        fetch('/add-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                // reload the page
+                // location.reload();
+
+                alert("Update successful");
+            } else {
+                alert("Update failed: " + result.error);
+            }
+        })
+        .catch(error => {
+            alert("Request failed: " + error);
+        });
+    }
+  </script>
+</body>
+</html>
+
