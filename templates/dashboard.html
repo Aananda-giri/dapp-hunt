@@ -8,17 +8,21 @@
 </head>
 <body class="bg-gray-100">
   <!-- Navbar -->
-  <nav class="bg-white shadow-md">
+   <!-- Navbar -->
+   <nav class="bg-white shadow-md">
     <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-      <div class="flex items-center">
-        <img src="https://cdn.dribbble.com/userupload/17866585/file/original-8790f17854ac67ff843423bab00dc0cd.png?resize=400x0" alt="Logo" class="h-10 w-10 object-cover object-center">
-        <a href="/landing" class="ml-3 text-2xl font-semibold text-gray-800">PitchReady</a>
-      </div>
-      <button class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-        + Create New Project
-      </button>
+        <div class="flex items-center">
+            <img src="https://cdn.dribbble.com/userupload/17866585/file/original-8790f17854ac67ff843423bab00dc0cd.png?resize=400x0"
+                 alt="Logo"
+                 class="h-10 w-10 object-cover object-center">
+            <a href="/landing" class="ml-3 text-2xl font-semibold text-gray-800">PitchReady</a>
+        </div>
+        <button onclick="openProjectModal()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+            + Create New Project
+        </button>
     </div>
-  </nav>
+</nav>
+
 
   <div class="flex mx-auto max-w-7xl mt-8">
     <!-- Sidebar -->
@@ -105,7 +109,7 @@
     <input type="text" id="elementPrompt" class="w-full px-4 py-2 border rounded-md mt-2" placeholder="e.g. Describe the market opportunity...">
 
     <div class="flex justify-end mt-4">
-      <button onclick="closeModal()" class="bg-gray-400 text-white px-4 py-2 rounded-md mr-2 hover:bg-gray-500">
+      <button onclick="closeProjectModal()" class="bg-gray-400 text-white px-4 py-2 rounded-md mr-2 hover:bg-gray-500">
         Cancel
       </button>
       <button onclick="saveElement()" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
@@ -115,11 +119,56 @@
   </div>
 </div>
 
+<!-- Modal (Hidden by Default) -->
+<div id="add_project" class="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 hidden">
+  <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+      <h2 class="text-xl font-semibold mb-4">New Project</h2>
+
+      <!-- Project Name Input -->
+      <label class="block text-gray-700 mb-2">Project Name</label>
+      <input type="text" id="projectName" placeholder="Enter project name"
+             class="w-full px-3 py-2 border border-gray-300 rounded-md mb-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+
+      <!-- Purpose Dropdown -->
+      <label class="block text-gray-700 mb-2">Purpose</label>
+      <select id="projectPurpose" class="w-full px-3 py-2 border border-gray-300 rounded-md mb-4">
+          <option value="due_diligence">Due Diligence</option>
+          <option value="brainstorm">Brainstorm</option>
+      </select>
+
+      <!-- Buttons -->
+      <div class="flex justify-end gap-2">
+          <button onclick="closeProjectModal()" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">
+              Cancel
+          </button>
+          <button onclick="submitProject()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+              Create
+          </button>
+      </div>
+  </div>
+</div>
+
 
     </main>
   </div>
 </body>
+<!-- JavaScript for Modal -->
+<script>
+  function openProjectModal() {
+      document.getElementById('add_project').classList.remove('hidden');
+  }
 
+  function closeProjectModal() {
+      document.getElementById('add_project').classList.add('hidden');
+  }
+
+  function submitProject() {
+      const projectName = document.getElementById('projectName').value;
+      const projectPurpose = document.getElementById('projectPurpose').value;
+      window.location.href = "/"; // Redirect to home page
+      closeProjectModal();
+  }
+</script>
 <script>
   function openModal() {
     document.getElementById("canvasModal").classList.remove("hidden");
