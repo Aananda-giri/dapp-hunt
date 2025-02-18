@@ -15,7 +15,7 @@ assert os.environ.get('ATOMA_BEARER') != None
 from openai import OpenAI
 
 class DocumentQA:
-    def __init__(self, api_token: str='', mongo='', chunk_size: int = 1000, overlap: int = 100):
+    def __init__(self, api_token: str='', mongo='', chunk_size: int = 5000, overlap: int = 100):
         if not api_token:
             api_token = os.environ.get('ATOMA_BEARER')
             assert api_token !=None, "No atoma bearer found in .env"
