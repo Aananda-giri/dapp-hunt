@@ -54,7 +54,7 @@ class DocumentQA:
         with open('prompt.txt','w') as f:
             f.write(query)
 
-        print(f'query: {query}')
+        # print(f'query: {query}')
         # query using deepseek r1 model
         #---------------------------
         if model_name == 'r1':
@@ -205,7 +205,7 @@ class DocumentQA:
         if all_chunks:
             self.mongo.collection.insert_many(all_chunks)
 
-    def search_documents(self, query:str, source: str, n: int = 15, full_text_search=False) -> List[Dict]:
+    def search_documents(self, query:str, source: str, n: int = 10, full_text_search=False) -> List[Dict]:
         """
         * full text search on `text_content` to perform Search for most relevant documents from a specific source
         
