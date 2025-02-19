@@ -52,12 +52,17 @@
       <section id="overview" class="content-section">
           <h2 class="text-3xl font-bold text-gray-800 mb-6">Recently Added Projects</h2>
           <div class="grid grid-cols-3 gap-6">
-              <div class="bg-white p-6 rounded-lg shadow-md">
-                  <h3 class="text-xl font-semibold text-blue-700">FinTech X</h3>
-                  <p class="text-gray-600 mt-2">AI-driven financial planning tool.</p>
-                  <button class="mt-4 text-blue-600 hover:underline">View Canvas →</button>
+            {% for source in sources %}  
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold text-blue-700">{{source.source}}</h3>
+                    <p class="text-gray-600 mt-2">{{source.tagline}}</p>
+                
+                <!-- <h3 class="text-xl font-semibold text-blue-700">FinTech X</h3> -->
+                  <!-- <p class="text-gray-600 mt-2">AI-driven financial planning tool.</p> -->
+                  <a class="mt-4 text-blue-600 hover:underline" href="/source/{{ source.source }}">View Canvas →</a>
               </div>
-              <div class="bg-white p-6 rounded-lg shadow-md">
+              {% endfor %}
+              <!-- <div class="bg-white p-6 rounded-lg shadow-md">
                   <h3 class="text-xl font-semibold text-blue-700">HealthAI</h3>
                   <p class="text-gray-600 mt-2">AI-powered health monitoring solution.</p>
                   <button class="mt-4 text-blue-600 hover:underline">View Canvas →</button>
@@ -66,15 +71,19 @@
                   <h3 class="text-xl font-semibold text-blue-700">EduSmart</h3>
                   <p class="text-gray-600 mt-2">Personalized AI tutor for students.</p>
                   <button class="mt-4 text-blue-600 hover:underline">View Canvas →</button>
-              </div>
+              </div> -->
           </div>
           <h2 class="text-3xl font-bold text-gray-800 mb-4 mt-10">Your Canvas Format</h2>
           <div class="grid grid-cols-2 gap-6">
-              <div class="bg-white p-6 rounded-lg shadow-md">
-                  <h3 class="text-xl font-semibold text-gray-700">Problem</h3>
-                  <p class="text-gray-600">Define the problem you are solving.</p>
-              </div>
-              <div class="bg-white p-6 rounded-lg shadow-md">
+                {% for key, value in questions.items() %}
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold text-gray-700">{{key}}</h3>
+                        <p class="text-gray-600">{{value}}</p>
+                    <!-- <h3 class="text-xl font-semibold text-gray-700">Problem</h3>
+                    <p class="text-gray-600">Define the problem you are solving.</p> -->
+                    </div>
+                {% endfor %}
+              <!-- <div class="bg-white p-6 rounded-lg shadow-md">
                   <h3 class="text-xl font-semibold text-gray-700">Solution</h3>
                   <p class="text-gray-600">How does your product solve the problem?</p>
               </div>
@@ -85,7 +94,7 @@
               <div class="bg-white p-6 rounded-lg shadow-md">
                   <h3 class="text-xl font-semibold text-gray-700">Key Metrics</h3>
                   <p class="text-gray-600">What success metrics do you track?</p>
-              </div>
+              </div> -->
           </div>
           <div class="mt-6">
             <button onclick="openModal()" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
@@ -132,10 +141,12 @@
       <section id="canvas-format" class="content-section hidden">
           <h2 class="text-3xl font-bold text-gray-800 mb-6">Your Canvas Format</h2>
           <div class="grid grid-cols-2 gap-6">
-              <div class="bg-white p-6 rounded-lg shadow-md">
-                  <h3 class="text-xl font-semibold text-gray-700">Problem</h3>
-                  <p class="text-gray-600">Define the problem you are solving.</p>
-              </div>
+            {% for key, value in questions.items() %}  
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-semibold text-gray-700">{{key}}</h3>
+                    <p class="text-gray-600">{{value}}</p>
+                </div>
+              {% endfor %}
               <div class="bg-white p-6 rounded-lg shadow-md">
                   <h3 class="text-xl font-semibold text-gray-700">Solution</h3>
                   <p class="text-gray-600">How does your product solve the problem?</p>
@@ -288,11 +299,36 @@
       document.getElementById('add_project').classList.add('hidden');
   }
 
-  function submitProject() {
+  async function submitProject() {
       const projectName = document.getElementById('projectName').value;
       const projectPurpose = document.getElementById('projectPurpose').value;
-      window.location.href = "/canvas/aptos"; // Redirect to home page
-      closeProjectModal();
+      console.log(`name: ${projectName} purpose: ${projectPurpose}`);
+
+      try {
+        const response = await fetch('/add_source_new', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                projectName: projectName,
+                projectPurpose: projectPurpose
+            })
+        });
+
+        
+    } catch (error) {
+        console.error('Error:', error);
+        loadingState.classList.add('hidden');
+        submitButton.disabled = false;
+        submitButton.classList.remove('opacity-50');
+        alert('An error occurred. Please try again.');
+    } finally {
+        // window.location.href = "/canvas/aptos"; // Redirect to home page
+    
+        window.location.href = `/canvas/${projectName}`; // Redirect to home page
+        closeProjectModal();
+    }
+    
+    
   }
 </script>
 <script>

@@ -109,11 +109,21 @@ async def home(request):
 async def dashboard(request):
     """Home page listing all sources"""
     # sources = mongo.summary_collection.distinct("source")
-    sources = list(mongo.summary_collection.aggregate([
-            {"$group": {"_id": "$source", "tagline": {"$first": "$tagline"}}},
-            {"$project": {"_id": 0, "source": "$_id", "tagline": 1}}
-        ]))
-    return {"sources": sources}
+    
+    sources = list(
+        mongo.summary_collection.find({})
+            .sort("created_at", -1)  # Sort by created_at in descending order
+    )
+
+    # Get questions
+    source = "`your_product`"
+    questions = {}
+    for key, value in qa_system.questions.items():
+        questions[key] = value.format(source=source)
+    
+    print(f'questions: {questions}')
+    
+    return {"sources": sources, "questions":questions}
 
 @app.route("/landing")
 @jinja.template("landing.html")
@@ -222,6 +232,42 @@ async def add_source(request):
     return sanic.response.json({"status": "success", "redirect_url":f"/source/{source}"})
 
 
+@app.route("/add_source_new", methods=["POST"])
+async def add_source_new(request):
+    # Handle POST request
+    print('\n\nadding new source')
+    data = request.json
+    source = data.get("projectName")
+    purpose = data.get("projectPurpose")
+    print(f'\n\n source: {source}, purpose:{purpose}')
+    try:
+        questions = {}
+        summaries = {}
+        for key, value in qa_system.questions.items():
+            questions[key] = value.format(source=source)
+        # print(questions)
+
+        # Dummy summary data
+        for q_key, q_template in questions.items():
+            summaries[q_key] = "• Not enough information."
+        
+        
+
+        # print(f'summaries: {summaries}')
+        # Save summary to MongoDB
+        summary_doc = {
+            "source": source,
+            "summaries": summaries,
+            "tagline":'',
+            "purpose":purpose,
+            "created_at": datetime.now()
+        }
+        mongo.summary_collection.insert_one(summary_doc)
+        return {"success":True}
+    except Exception as ex:
+        print(ex)
+        return {"success":False}
+
 @app.route("/source/<source>")
 @jinja.template("source.html")
 async def source_page(request, source):
@@ -246,6 +292,7 @@ async def source_page(request, source):
 async def canvas(request, source):
     """Individual source page"""
     summary = mongo.summary_collection.find_one({"source": source})
+    data_sources = list(mongo.collection.find({'source':source},{'source':1, 'url':1}))
     chat_history = mongo.brainstrom_collection.find({'source':source})
     
     # Iterate through the cursor to get each document
@@ -257,7 +304,8 @@ async def canvas(request, source):
         "source": source,
         "summary": summary["summaries"] if summary else {},
         "chat_history": messages,
-        "pdf_path": f"/download/{source}/summary.pdf"
+        "pdf_path": f"/download/{source}/summary.pdf",
+        "data_sources": data_sources
     }
 
 @app.route("/regenerate_summary", methods=["GET", "POST"])
