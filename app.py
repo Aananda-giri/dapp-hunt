@@ -292,7 +292,21 @@ async def source_page(request, source):
 async def canvas(request, source):
     """Individual source page"""
     summary = mongo.summary_collection.find_one({"source": source})
-    data_sources = list(mongo.collection.find({'source':source},{'source':1, 'url':1}))
+    pipeline = [
+        {
+            "$match": {"source": source}  # Your initial filter
+        },
+        {
+            "$group": {
+                "_id": "$url",  # Group by the 'url' field
+                "source": {"$first": "$source"},  # Get the first 'source' for each unique URL
+                # Include other fields if needed, using $first, $last, $max, etc.
+                # Example: "other_field": {"$first": "$other_field"}
+            }
+        }
+    ]
+
+    data_sources = list(mongo.collection.aggregate(pipeline))
     chat_history = mongo.brainstrom_collection.find({'source':source})
     
     # Iterate through the cursor to get each document
@@ -713,7 +727,7 @@ async def get_data(request, source):
         print(e)
         return {"success": False, "error": str(e)}
 
-@app.route("/data/<source>", methods=["POST"])
+@app.route("/update-source", methods=["POST"])
 async def update_data(request, source):
     try:
         data = request.json
@@ -887,6 +901,42 @@ async def add_data(request):
     except Exception as ex:
         print(f' error adding new data: {ex}')
         return sanic.response.json({"success": False, "error": "No matching document found"})
+
+# add new url or data to existing knowledge base
+@app.post("/update-source-new")
+async def update_source_new(request):
+    data = request.json
+    source = urllib.parse.unquote(data.get("source", None))
+    new_name = urllib.parse.unquote(data.get("newName", None))
+    new_purpose = urllib.parse.unquote(data.get("newPurpose", None))
+    
+    
+    print(f"source:{source}\n\n, new_name:\"{new_name}\" new_purpose:\"{new_purpose}\"")
+    
+    try:
+        '''
+        update in mongo collection
+        find by source
+            update:
+                source -> new_name
+                purpose -> new_purpose
+        '''
+        update_params = {
+            "$set": {
+                "source": new_name,
+                "purpose": new_purpose
+            }
+        }
+        mongo.collection.update_many({"source": source}, update_params)
+        mongo.summary_collection.update_many({"source": source}, update_params)
+        mongo.messages_collection.update_many({"source": source}, update_params)
+        mongo.brainstrom_collection.update_many({"source": source}, update_params)
+        
+        return sanic.response.json({"success": True})
+    except Exception as ex:
+        print(f' error adding new data: {ex}')
+        return sanic.response.json({"success": False, "error": "No matching document found"})
+
 
 
 if __name__ == "__main__":

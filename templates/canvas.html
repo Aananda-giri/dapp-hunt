@@ -6,8 +6,133 @@
     <title>{{ source | capitalize }}</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #666;
+        }
+
+        /* Improved markdown content styling */
+        .markdown-content {
+            max-width: 100%;
+            overflow-x: auto;
+            line-height: 1.6;
+        }
+        
+        .markdown-content table {
+            display: block;
+            max-width: 100%;
+            overflow-x: auto;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        
+        .markdown-content pre {
+            max-width: 100%;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        
+        .markdown-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+        }
+
+        /* Enhanced sticky note styling */
+        .sticky-note {
+            transition: all 0.3s ease;
+            min-height: 200px;
+        }
+        
+        .sticky-note:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Chat message animations */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-animation {
+            animation: slideIn 0.3s ease forwards;
+        }
+
+        /* Enhanced button styling */
+        .action-button {
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-button:after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        .action-button:hover:after {
+            width: 200%;
+            height: 200%;
+        }
+
+        /* Improved bubble styling */
+        .bubble {
+            background: linear-gradient(135deg, #3f30c2, #2a1f8f);
+            border: none;
+            padding: 12px 24px;
+            color: white;
+            border-radius: 25px;
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .bubble:hover {
+            background: linear-gradient(135deg, #fa004b, #c80039);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+    </style>
 </head>
 <body class="bg-gray-100">
+    
+    <div id="add_url-spinner-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center z-50 text-white text-lg font-bold backdrop-filter backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-lg shadow-lg text-gray-800 flex flex-col items-center">
+            <div class="w-16 h-16 border-4 border-t-4 border-t-transparent border-green-500 rounded-full animate-spin mb-4"></div>
+            <div id="add_url-spinner-overlay-content">
+                Adding URL/Dsata (might take ~1 min)
+            </div>
+        </div>
+    </div>
+    
+
 
     <!-- Navbar -->
     <nav class="bg-white shadow-md p-4">
@@ -35,7 +160,7 @@
                         <option value="brainstorm">Brainstorm for founders</option>
                     </select>
                     
-                    <button type="submit" id="submitButton" class="bg-green-500 text-white px-4 py-2 rounded w-full mb-8 hover:bg-green-600">
+                    <button onclick="updateName()" id="submitButton" class="bg-green-500 text-white px-4 py-2 rounded w-full mb-8 hover:bg-green-600">
                         Update
                     </button>
                 </form>
@@ -44,12 +169,12 @@
 
                     <h2 class="text-xl font-bold mb-4 text-gray-800">Add New Source</h2>
             
-                    <label class="block text-gray-700 mb-2">Enter URLs</label>
+                    <label class="block text-gray-700 mb-2">Enter URLs/Data</label>
                     <div id="urlInputs">
-                        <input id="sourceUrl" type="text" required class="w-full p-2 border rounded mb-4" placeholder="Enter URL of resources">
+                        <input id="sourceUrl" type="text" required class="w-full p-2 border rounded mb-4" placeholder="Enter URL/Data">
                     </div>
         
-                    <button type="submit" id="submitButton" class="bg-green-500 text-white px-4 py-2 rounded w-full mb-8 hover:bg-green-600">
+                    <button type="submit" onclick="addSource(); event.stopPropagation();" id="submitButton" class="bg-green-500 text-white px-4 py-2 rounded w-full mb-8 hover:bg-green-600">
                         Add Source
                     </button>
                 </form>
@@ -60,101 +185,57 @@
 
 
 
-     <div class="space-y-4 max-h-80 ">
-    <!-- Dummy Source 1 -->
-    <div class="flex items-center gap-2">
-        <span class="font-semibold text-lg">1.</span>
-        <div class="bg-gray-100 p-2 rounded-lg shadow-md flex justify-between items-center border border-gray-300 w-full">
-            <button onclick="window.open('https://example1.com', '_blank')" class="text-blue-600 font-semibold hover:underline">
-                https://example1.com
-            </button>
-            <div class="flex gap-4">
-                <!-- Show Scraped Data Button -->
-                <button onclick="openModal('https://example1.com')" class="bg-blue-500 text-white px-2 py-1  rounded-md hover:bg-blue-600">
-                    Show Data
-                </button>
-            </div>
-        </div>
-    </div>
-    <div id="modal-https://example1.com" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
-        <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-            <h3 class="text-xl font-bold mb-4">https://example1.com</h3>
-            <p class="text-gray-700">This is the scraped data from https://example1.com.</p>
-            <div class="flex justify-end gap-4 mt-4">
-                <button onclick="closeModal('https://example1.com')" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">
-                    Cancel
-                </button>
-                <button onclick="deleteSource('https://example1.com')" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">
-                    Delete
-                </button>
-            </div>
-        </div>
-    </div>
+                <div class="space-y-4 max-h-80 ">
+                <!-- Dummy Source 1 -->
+                {% for data_source in data_sources %}
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold text-lg">1.</span>
+                            <div class="bg-gray-100 p-2 rounded-lg shadow-md flex justify-between items-center border border-gray-300 w-full">
+                                <button onclick="window.open('{{source._id}}', '_blank')" class="text-blue-600 font-semibold hover:underline">
+                                    <!-- {{source._id}} -->
+                                    {{ data_source._id[:20] }}
+                                </button>
+                                <div class="flex gap-4">
+                                    <!-- Show Scraped Data Button -->
+                                    <a href="/data/{{source}}" class="bg-blue-500 text-white px-2 py-1  rounded-md hover:bg-blue-600">
+                                        Show Data
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    
 
-    <!-- Dummy Source 2 -->
-    <div class="flex items-center gap-2">
-        <span class="font-semibold text-lg">2.</span>
-        <div class="bg-gray-100 p-2 rounded-lg shadow-md flex justify-between items-center border border-gray-300 w-full">
-            <button onclick="window.open('https://example2.com', '_blank')" class="text-blue-600 font-semibold hover:underline">
-                https://example2.com
-            </button>
-            <div class="flex gap-4">
-                <!-- Show Scraped Data Button -->
-                <button onclick="openModal('https://example2.com')" class="bg-blue-500 text-white px-2 py-1  rounded-md hover:bg-blue-600">
-                    Show Data
-                </button>
-            </div>
-        </div>
-    </div>
-    <div id="modal-https://example2.com" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
-        <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-            <h3 class="text-xl font-bold mb-4">https://example2.com</h3>
-            <p class="text-gray-700">This is the scraped data from https://example2.com.</p>
-            <div class="flex justify-end gap-4 mt-4">
-                <button onclick="closeModal('https://example2.com')" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">
-                    Cancel
-                </button>
-                <button onclick="deleteSource('https://example2.com')" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">
-                    Delete
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Dummy Source 3 -->
-    <div class="flex items-center gap-2">
-        <span class="font-semibold text-lg">3.</span>
-        <div class="bg-gray-100 p-2 rounded-lg shadow-md flex justify-between items-center border border-gray-300 w-full">
-            <button onclick="window.open('https://example3.com', '_blank')" class="text-blue-600 font-semibold hover:underline">
-                https://example3.com
-            </button>
-            <div class="flex gap-4">
-                <!-- Show Scraped Data Button -->
-                <button onclick="openModal('https://example3.com')" class="bg-blue-500 text-white px-2 py-1 rounded-md hover:bg-blue-600">
-                    Show Data
-                </button>
-            </div>
-        </div>
-    </div>
-    <div id="modal-https://example3.com" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
-        <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-            <h3 class="text-xl font-bold mb-4">https://example3.com</h3>
-            <p class="text-gray-700 ">This is the scraped data from https://example3.com.</p>
-            <div class="flex justify-end gap-4 mt-4">
-                <button onclick="closeModal('https://example3.com')" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">
-                    Cancel
-                </button>
-                <button onclick="deleteSource('https://example3.com')" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">
-                    Delete
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-
-
+                    <!-- Dummy Source 3 -->
+                    <!-- <div class="flex items-center gap-2">
+                        <span class="font-semibold text-lg">3.</span>
+                        <div class="bg-gray-100 p-2 rounded-lg shadow-md flex justify-between items-center border border-gray-300 w-full">
+                            <button onclick="window.open('https://example3.com', '_blank')" class="text-blue-600 font-semibold hover:underline">
+                                https://example3.com
+                            </button>
+                            <div class="flex gap-4">
+                                <!- - Show Scraped Data Button - ->
+                                <button onclick="openModal('https://example3.com')" class="bg-blue-500 text-white px-2 py-1 rounded-md hover:bg-blue-600">
+                                    Show Data
+                                </button>
+                            </div>
+                        </div>
+                    </div> -->
+                    <div id="modal-https://example3.com" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+                        <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+                            <h3 class="text-xl font-bold mb-4">https://example3.com</h3>
+                            <p class="text-gray-700 ">This is the scraped data from https://example3.com.</p>
+                            <div class="flex justify-end gap-4 mt-4">
+                                <button onclick="closeModal('https://example3.com')" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">
+                                    Cancel
+                                </button>
+                                <button onclick="deleteSource('https://example3.com')" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </aside>
 
         
@@ -165,13 +246,15 @@
         <!-- Main Section (Source Summary & Chat) -->
         <main class="w-full md:w-2/3 md:ml-6 mb-20">
             <!-- Source Summary -->
-            <div class="bg-white p-6 rounded-lg shadow-md mb-6">
-                <h2 class="text-2xl font-bold text-center mb-4">Lean Canvas</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="max-w-7xl mx-auto mb-12">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {% for key, value in summary.items() %}
-                    <div class="p-4 bg-gray-100 rounded-lg shadow">
-                        <h3 class="font-bold mb-2">{{ key | title }}</h3>
-                        <p class="text-gray-700">{{ value }}</p>
+                    <div class="sticky-note p-6 rounded-xl shadow-md relative">
+                        <h2 class="font-bold text-xl mb-4 text-gray-800">{{ key|title }}</h2>
+                        <p class="text-gray-700 editable" style="white-space: pre-line;">{{ value }}</p>
+                        <button class="edit-btn absolute top-4 right-4 p-2 bg-gray-200 rounded-full hidden hover:bg-gray-300 transition-colors">
+                            ✏️
+                        </button>
                     </div>
                     {% endfor %}
                 </div>
@@ -252,6 +335,101 @@
     </script>
     <!-- JavaScript -->
     <script>
+        function addSource(){
+            const spinnerOverlay = document.getElementById('add_url-spinner-overlay');
+            spinnerOverlay.classList.remove('hidden');
+
+            // Extract source from the current URL
+            const source = window.location.pathname.split("/").pop();;
+            
+            const new_input = document.getElementById('sourceUrl').value;
+            console.log(`Adding url/data: ${new_input} to source: ${source}`);
+            
+            
+            // return;
+            if (!new_input) {
+                alert("Could not find textarea content");
+                return;
+            }
+
+            // Prepare data for request
+            let data = {
+                source: source,
+                new_input: new_input,
+            };
+
+            // Send POST request to Sanic backend
+            fetch('/add-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    // reload the page
+                    location.reload();
+
+                    alert("Update successful");
+                } else {
+                    alert("Update failed: " + result.error);
+                }
+            })
+            .catch(error => {
+                alert("Request failed: " + error);
+            });
+        }
+
+
+        function updateName(){
+            const newName = document.getElementById('sourceInput').value;
+            const newPurpose = document.getElementById('projectPurpose').value;
+            
+            // change content of spinner overlay
+            document.getElementById('add_url-spinner-overlay-content').textContent = "Updating (might take ~1 minute)";
+
+            const spinnerOverlay = document.getElementById('add_url-spinner-overlay');
+            spinnerOverlay.classList.remove('hidden');
+
+            // Extract source from the current URL
+            const source = window.location.pathname.split("/").pop();;
+            
+            console.log(`updating ${source} -> ${newName} purpose->${newPurpose}`);
+
+            // Prepare data for request
+            let data = {
+                source: source,
+                newName: newName, 
+                newPurpose: newPurpose,
+            };
+
+            // Send POST request to Sanic backend
+            fetch('/update-source-new', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    // reload the page
+                    window.location.href = `/canvas/${newName}`;
+
+                    alert("Update successful");
+                } else {
+                    alert("Update failed: " + result.error);
+                }
+            })
+            .catch(error => {
+                alert("Request failed: " + error);
+            });
+        }
+
+
         document.getElementById('sampleButton').onclick = () => {
             document.getElementById('sourceInput').value = "Google";
             document.getElementById('urlInputs').innerHTML = `

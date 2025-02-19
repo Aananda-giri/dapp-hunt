@@ -52,7 +52,7 @@
       <section id="overview" class="content-section">
           <h2 class="text-3xl font-bold text-gray-800 mb-6">Recently Added Projects</h2>
           <div class="grid grid-cols-3 gap-6">
-            {% for source in sources %}  
+            {% for source in sources[:3] %}  
             <div class="bg-white p-6 rounded-lg shadow-md">
                     <h3 class="text-xl font-semibold text-blue-700">{{source.source}}</h3>
                     <p class="text-gray-600 mt-2">{{source.tagline}}</p>
