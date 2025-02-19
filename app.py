@@ -259,7 +259,7 @@ async def add_source_new(request):
             "source": source,
             "summaries": summaries,
             "tagline":'',
-            "purpose":purpose,
+            "purpose":purpose,  # purpose is either "brainstorm" or "due_diligence"
             "created_at": datetime.now()
         }
         mongo.summary_collection.insert_one(summary_doc)
@@ -306,6 +306,8 @@ async def canvas(request, source):
         }
     ]
 
+    purpose = mongo.summary_collection.find_one({'source':source})['purpose']
+
     data_sources = list(mongo.collection.aggregate(pipeline))
     chat_history = mongo.brainstrom_collection.find({'source':source})
     
@@ -319,7 +321,8 @@ async def canvas(request, source):
         "summary": summary["summaries"] if summary else {},
         "chat_history": messages,
         "pdf_path": f"/download/{source}/summary.pdf",
-        "data_sources": data_sources
+        "data_sources": data_sources,
+        "purpose": purpose
     }
 
 @app.route("/regenerate_summary", methods=["GET", "POST"])
@@ -503,8 +506,15 @@ async def chat(request, source):
     # print(f'data:{data}')
     query = data.get("query")
     model = data.get("model")
-    print(f'data:{data} \n model: {model} \nsource:{source}')
-
+    projectPurpose = data.get("projectPurpose", None)
+    
+    if projectPurpose:
+        if projectPurpose == 'brainstrom':
+            model = 'brainstrom-' + model
+        else:
+            model = "chat-" + model
+    
+    print(f'data:{data} \n model: {model} \nsource:{source}, projectPurpose: {projectPurpose}')
     brainstrom = False
     if model and model.startswith('brainstrom'):
         # brainstrom prompt model (better responses while chatting)
