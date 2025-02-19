@@ -93,18 +93,18 @@ def generate_pdf(source: str, qa_results: Dict[str, str]) -> str:
     pdf.output(filename)
     return filename
 
-@app.route("/")
-@jinja.template("home.html")
-async def home(request):
-    """Home page listing all sources"""
-    # sources = mongo.summary_collection.distinct("source")
-    sources = list(mongo.summary_collection.aggregate([
-            {"$group": {"_id": "$source", "tagline": {"$first": "$tagline"}}},
-            {"$project": {"_id": 0, "source": "$_id", "tagline": 1}}
-        ]))
-    return {"sources": sources}
+# @app.route("/")
+# @jinja.template("home.html")
+# async def home(request):
+#     """Home page listing all sources"""
+#     # sources = mongo.summary_collection.distinct("source")
+#     sources = list(mongo.summary_collection.aggregate([
+#             {"$group": {"_id": "$source", "tagline": {"$first": "$tagline"}}},
+#             {"$project": {"_id": 0, "source": "$_id", "tagline": 1}}
+#         ]))
+#     return {"sources": sources}
 
-@app.route("/dashboard")
+@app.route("/")
 @jinja.template("dashboard.html")
 async def dashboard(request):
     """Home page listing all sources"""
@@ -306,7 +306,11 @@ async def canvas(request, source):
         }
     ]
 
-    purpose = mongo.summary_collection.find_one({'source':source})['purpose']
+    summary = mongo.summary_collection.find_one({'source':source})
+    if summary and 'purpose' in summary.keys():
+        purpose = summary['purpose']
+    else:
+        purpose = 'brainstrom'
 
     data_sources = list(mongo.collection.aggregate(pipeline))
     chat_history = mongo.brainstrom_collection.find({'source':source})
