@@ -122,8 +122,10 @@ async def dashboard(request):
         questions[key] = value.format(source=source)
     
     print(f'questions: {questions}')
+
+    download_files = [filename.split('_')[0] for filename in os.listdir('summaries')]
     
-    return {"sources": sources, "questions":questions}
+    return {"sources": sources, "questions":questions, "download_files":download_files}
 
 @app.route("/landing")
 @jinja.template("landing.html")
