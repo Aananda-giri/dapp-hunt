@@ -138,7 +138,7 @@
     <nav class="bg-white shadow-md p-4">
         <div class="max-w-6xl mx-auto flex justify-between items-center">
             <h1 class="text-2xl font-bold text-gray-800">{{ source | capitalize }}</h1>
-            <a href="/dashboard" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Dashboard</a>
+            <a href="/" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Dashboard</a>
         </div>
     </nav>
 
@@ -162,10 +162,15 @@
                         {% elif purpose == "due_diligence" %}
                         <option value="due_diligence">Due Diligence for Investors</option>
                         <option value="brainstorm">Brainstorm for founders</option>
+                        {% else %}
+                        fucking else
+                        <option value="brainstorm">Brainstorm for founders</option>
+                        <option value="due_diligence">Due Diligence for Investors</option>
                         {% endif %}
+                        fucking eee
                     </select>
                     
-                    <button onclick="updateName()" id="submitButton" class="bg-green-500 text-white px-4 py-2 rounded w-full mb-8 hover:bg-green-600">
+                    <button onclick="updateName()" id="updateNamesubmitButton" class="bg-green-500 text-white px-4 py-2 rounded w-full mb-8 hover:bg-green-600">
                         Update
                     </button>
                 </form>
@@ -179,7 +184,7 @@
                         <input id="sourceUrl" type="text" required class="w-full p-2 border rounded mb-4" placeholder="Enter URL/Data">
                     </div>
         
-                    <button type="submit" onclick="addSource(); event.stopPropagation();" id="submitButton" class="bg-green-500 text-white px-4 py-2 rounded w-full mb-8 hover:bg-green-600">
+                    <button type="submit" onclick="addSource(); event.stopPropagation();" id="addSourceSubmitButton" class="bg-green-500 text-white px-4 py-2 rounded w-full mb-8 hover:bg-green-600">
                         Add Source
                     </button>
                 </form>
@@ -276,15 +281,15 @@
                 <div class="flex justify-between items-center mb-6">
                     <div class="flex items-center justify-between w-full">
                         <select id="model_selector" class="p-2 border border-gray-300 rounded">
-                            <optgroup id="atoma-models" label="Atoma Models" style="background-color: #d4f7dc;">
-                                <option value="r1">deepseek-r1</option>
-                                <option value="llama3-70B">meta-llama3-70B</option>
-                            </optgroup>
                             <optgroup id="openai-models" label="OpenAI Models" style="background-color: #d4f7dc;">
                                 <option value="o1">o1</option>
                                 <option value="gpt-4o">gpt-4o</option>
                                 <option value="gpt-4o-mini">gpt-4o-mini</option>
                                 <option value="o3-mini">o3-mini</option>
+                            </optgroup>
+                            <optgroup id="atoma-models" label="Atoma Models" style="background-color: #d4f7dc;">
+                                <option value="r1">deepseek-r1</option>
+                                <option value="llama3-70B">meta-llama3-70B</option>
                             </optgroup>
                         </select>
                         <label class="flex items-center space-x-3">
@@ -324,7 +329,7 @@
                     <input id="chat-input" type="text" name="query" 
                         class="flex-1 p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm" 
                         placeholder="Ask a question..." required>
-                    <button type="submit" id="submitButton" 
+                    <button id="chatSubmitButton" 
                         class="action-button bg-blue-500 text-white px-8 py-4 rounded-lg hover:bg-blue-600 flex items-center gap-2 font-bold transition-colors">
                         <span>Send</span>
                         <span id="loadingIndicator" class="hidden">⏳</span>
@@ -417,6 +422,11 @@
             const newName = document.getElementById('sourceInput').value;
             const newPurpose = document.getElementById('projectPurpose').value;
             
+            if (!newName) {
+                alert("Name can't be empty.");
+                return;
+            }
+
             // change content of spinner overlay
             document.getElementById('add_url-spinner-overlay-content').textContent = "Updating (might take ~1 minute)";
 
@@ -472,12 +482,12 @@
             alert("Downloading conversation...");
         }
 
-        document.getElementById('chatForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const input = document.getElementById('chat-input').value;
-            alert(`You asked: ${input}`);
-            document.getElementById('chat-input').value = "";
-        };
+        // document.getElementById('chatForm').onsubmit = async (e) => {
+        //     e.preventDefault();
+        //     const input = document.getElementById('chat-input').value;
+        //     alert(`You asked: ${input}`);
+        //     document.getElementById('chat-input').value = "";
+        // };
     </script>
 
 <script>
@@ -607,7 +617,7 @@
                 document.getElementById('say_hi_div').style.display='none'
 
                 // Get the submit button and click it
-                const submit_button = document.getElementById('submitButton');
+                const submit_button = document.getElementById('chatSubmitButton');
                 submit_button.click();
             };
         } else {
@@ -741,7 +751,7 @@
         e.preventDefault();
 
         // Get references to the button and loading indicator
-        const submitButton = document.getElementById('submitButton');
+        const submitButton = document.getElementById('chatSubmitButton');
         const loadingIndicator = document.getElementById('loadingIndicator');
         const projectPurpose = document.getElementById('projectPurpose').value;
 

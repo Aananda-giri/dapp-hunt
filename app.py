@@ -238,6 +238,7 @@ async def add_source_new(request):
     print('\n\nadding new source')
     data = request.json
     source = data.get("projectName")
+    
     purpose = data.get("projectPurpose")
     print(f'\n\n source: {source}, purpose:{purpose}')
     try:
@@ -291,7 +292,7 @@ async def source_page(request, source):
 @jinja.template("canvas.html")
 async def canvas(request, source):
     """Individual source page"""
-    summary = mongo.summary_collection.find_one({"source": source})
+    # summary = mongo.summary_collection.find_one({"source": source})
     pipeline = [
         {
             "$match": {"source": source}  # Your initial filter
@@ -307,6 +308,29 @@ async def canvas(request, source):
     ]
 
     summary = mongo.summary_collection.find_one({'source':source})
+    if not summary or source=="your-project-name":
+        questions = {}
+        summaries = {}
+        for key, value in qa_system.questions.items():
+            questions[key] = value.format(source=source)
+        # print(questions)
+
+        # Dummy summary data
+        for q_key, q_template in questions.items():
+            summaries[q_key] = "• Not enough information."
+        
+        
+
+        # print(f'summaries: {summaries}')
+        # Save summary to MongoDB
+        summary = {
+            "source": source,
+            "summaries": summaries,
+            "tagline":'',
+            "purpose":'brainstorm',  # purpose is either "brainstorm" or "due_diligence"
+            "created_at": datetime.now()
+        }
+    
     if summary and 'purpose' in summary.keys():
         purpose = summary['purpose']
     else:
@@ -922,34 +946,37 @@ async def update_source_new(request):
     data = request.json
     source = urllib.parse.unquote(data.get("source", None))
     new_name = urllib.parse.unquote(data.get("newName", None))
-    new_purpose = urllib.parse.unquote(data.get("newPurpose", None))
-    
-    
-    print(f"source:{source}\n\n, new_name:\"{new_name}\" new_purpose:\"{new_purpose}\"")
-    
-    try:
-        '''
-        update in mongo collection
-        find by source
-            update:
-                source -> new_name
-                purpose -> new_purpose
-        '''
-        update_params = {
-            "$set": {
-                "source": new_name,
-                "purpose": new_purpose
-            }
-        }
-        mongo.collection.update_many({"source": source}, update_params)
-        mongo.summary_collection.update_many({"source": source}, update_params)
-        mongo.messages_collection.update_many({"source": source}, update_params)
-        mongo.brainstrom_collection.update_many({"source": source}, update_params)
+    if new_name:
+        new_purpose = urllib.parse.unquote(data.get("newPurpose", None))
         
-        return sanic.response.json({"success": True})
-    except Exception as ex:
-        print(f' error adding new data: {ex}')
-        return sanic.response.json({"success": False, "error": "No matching document found"})
+        
+        print(f"source:{source}\n\n, new_name:\"{new_name}\" new_purpose:\"{new_purpose}\"")
+        
+        try:
+            '''
+            update in mongo collection
+            find by source
+                update:
+                    source -> new_name
+                    purpose -> new_purpose
+            '''
+            update_params = {
+                "$set": {
+                    "source": new_name,
+                    "purpose": new_purpose
+                }
+            }
+            mongo.collection.update_many({"source": source}, update_params)
+            mongo.summary_collection.update_many({"source": source}, update_params)
+            mongo.messages_collection.update_many({"source": source}, update_params)
+            mongo.brainstrom_collection.update_many({"source": source}, update_params)
+            
+            return sanic.response.json({"success": True})
+        except Exception as ex:
+            print(f' error adding new data: {ex}')
+            return sanic.response.json({"success": False, "error": "No matching document found"})
+    else:
+        return sanic.response.json({"success": False, "error": "Name can't be empty"})
 
 
 
