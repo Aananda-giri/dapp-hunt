@@ -199,12 +199,25 @@
                 <!-- Dummy Source 1 -->
                 {% for data_source in data_sources %}
                         <div class="flex items-center gap-2">
-                            <span class="font-semibold text-lg">1.</span>
+                            <span class="font-semibold text-lg">{{loop.index}}</span>
                             <div class="bg-gray-100 p-2 rounded-lg shadow-md flex justify-between items-center border border-gray-300 w-full">
-                                <button onclick="window.open('{{source._id}}', '_blank')" class="text-blue-600 font-semibold hover:underline">
+                                
+                                {% if data_source._id == "mannual_input" %}
+                                <button class="text-blue-600 font-semibold hover:underline"></button>
+                                    <!-- {{source._id}} -->
+                                    <b>{{ data_source._id[:20] }}</b>
+                                </button>
+                                
+                                <script>console.log('fucking if');</script>
+                                {% else %}
+                                <button onclick="window.open('{{data_source._id}}', '_blank')" class="text-blue-600 font-semibold hover:underline">
                                     <!-- {{source._id}} -->
                                     {{ data_source._id[:20] }}
+                                    <script>console.log('fucking else');</script>
                                 </button>
+                                
+                                {%endif%}
+                                
                                 <div class="flex gap-4">
                                     <!-- Show Scraped Data Button -->
                                     <a href="/data/{{source}}" class="bg-blue-500 text-white px-2 py-1  rounded-md hover:bg-blue-600">
