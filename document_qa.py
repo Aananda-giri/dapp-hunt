@@ -4,7 +4,7 @@ from typing import List, Dict, Optional
 from pymongo import MongoClient
 from mongo import Mongo
 
-from a16z.brainstrom_prompt import get_brainstrom_prompt
+from a16z.brainstorm_prompt import get_brainstorm_prompt
 from atoma_sdk import AtomaSDK
 from dotenv import load_dotenv
 import os
@@ -51,7 +51,7 @@ class DocumentQA:
 
         * model name is one of these values: "o1", "r1", "llama3-70B"
         """
-        with open('prompt.txt','w') as f:
+        with open('prompt.txt','a') as f:
             f.write(query)
 
         # print(f'query: {query}')
@@ -239,8 +239,8 @@ class DocumentQA:
                 ).limit(n)
         return list(cursor)
 
-    def query_documents(self, query: str, source: str, n_docs: int = 100, bullet_points:bool = False, feed_message_history:bool=False, summary={}, brainstrom=False, model_name='gpt-4o', full_text_search=False, include_documents=True) -> str:
-        """# Added for brainstroming (False by default)
+    def query_documents(self, query: str, source: str, n_docs: int = 100, bullet_points:bool = False, feed_message_history:bool=False, summary={}, brainstorm=False, model_name='gpt-4o', full_text_search=False, include_documents=True) -> str:
+        """# Added for brainstorming (False by default)
         Complete pipeline: search documents and query LLM with context
         """
         # Get relevant documents
@@ -251,9 +251,9 @@ class DocumentQA:
             # Prepare context from relevant documents
             context = "\n\n".join([doc['text_content'] for doc in relevant_docs])
         
-        if brainstrom:
-            # brainstrom prompt for chat interface
-            prompt = get_brainstrom_prompt(source, context)
+        if brainstorm:
+            # brainstorm prompt for chat interface
+            prompt = get_brainstorm_prompt(source, context)
         elif bullet_points:
             # bullet points for lean canvas
             prompt = f"""please give very short response (not more than few sentences) You are a research-focused chatbot engaging in a conversation with a human. \n\n Your task is to provide professional and detailed answers to questions based strictly on the given context and messages history related to {source}.\n\n If the context or message history does not contain sufficient information to answer the question, clearly inform the user with very short message. Feel free to use the information user has provided in previous chat for answering new questions. Please answers in short bullet points which we can put in bullet points. Please respond with very short one sentence response if Question is actually suggestion or additional information. \n\nBelow is the context: \n\nContext: \n\n{context} \n\n"""
@@ -264,8 +264,8 @@ class DocumentQA:
         if feed_message_history:
             
             formatted_messages = ''
-            if brainstrom:
-                mongo_messages = list(self.mongo.brainstrom_collection.find({'source': source}, {'messages': 1}))
+            if brainstorm:
+                mongo_messages = list(self.mongo.brainstorm_collection.find({'source': source}, {'messages': 1}))
             else:
                 mongo_messages = list(self.mongo.messages_collection.find({'source': source}, {'messages': 1}))
             for messages in mongo_messages:

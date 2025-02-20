@@ -264,7 +264,7 @@ async def add_source_new(request):
             "source": source,
             "summaries": summaries,
             "tagline":'',
-            "purpose":purpose,  # purpose is either "brainstrom" or "due_diligence"
+            "purpose":purpose,  # purpose is either "brainstorm" or "due_diligence"
             "created_at": datetime.now()
         }
         mongo.summary_collection.insert_one(summary_doc)
@@ -278,7 +278,7 @@ async def add_source_new(request):
 async def source_page(request, source):
     """Individual source page"""
     summary = mongo.summary_collection.find_one({"source": source})
-    chat_history = mongo.brainstrom_collection.find({'source':source})
+    chat_history = mongo.brainstorm_collection.find({'source':source})
     
     # Iterate through the cursor to get each document
     messages = []
@@ -331,17 +331,17 @@ async def canvas(request, source):
             "source": source,
             "summaries": summaries,
             "tagline":'',
-            "purpose":'brainstrom',  # purpose is either "brainstrom" or "due_diligence"
+            "purpose":'brainstorm',  # purpose is either "brainstorm" or "due_diligence"
             "created_at": datetime.now()
         }
     
     if summary and 'purpose' in summary.keys():
         purpose = summary['purpose']
     else:
-        purpose = 'brainstrom'
+        purpose = 'brainstorm'
 
     data_sources = list(mongo.collection.aggregate(pipeline))
-    chat_history = mongo.brainstrom_collection.find({'source':source})
+    chat_history = mongo.brainstorm_collection.find({'source':source})
     
     # Iterate through the cursor to get each document
     messages = []
@@ -431,13 +431,13 @@ async def update_lean_canvas(request, source):
     print(f'data:{data}')
     
     model_name = data.get("model")
-    brainstrom = False
-    if model_name and model_name.startswith('brainstrom'):
-        # brainstrom prompt model (better responses while chatting)
+    brainstorm = False
+    if model_name and model_name.startswith('brainstorm'):
+        # brainstorm prompt model (better responses while chatting)
         # ------------------------
-        brainstrom = True
+        brainstorm = True
 
-    model_name = model_name.split('chat-')[-1].split('brainstrom-')[-1]   # one of these values : "o1", "r1", "llama3-70B"
+    model_name = model_name.split('chat-')[-1].split('brainstorm-')[-1]   # one of these values : "o1", "r1", "llama3-70B"
     print(f"Update lean canvas. source:{source}, model: {model_name}")
     
     # regenerate summary
@@ -459,7 +459,7 @@ async def update_lean_canvas(request, source):
         n_docs=100,
         feed_message_history=True,
         summary=summary,
-        brainstrom=brainstrom,            # Added for brainstroming (True or False)
+        brainstorm=brainstorm,            # Added for brainstorming (True or False)
         model_name = model_name,    # one of these values : "o1", "r1", "llama3-70B"
         full_text_search=False,
         include_documents=False
@@ -468,8 +468,8 @@ async def update_lean_canvas(request, source):
         
     query="yes" # yes in the sense that user clicked on the checkbox saying update the lean canvas.
     # print(f'response: {response}')
-    if brainstrom:
-        mongo.append_brainstrom_message(source, query, response)
+    if brainstorm:
+        mongo.append_brainstorm_message(source, query, response)
     else:
         mongo.append_message(source, query, response)
     
@@ -487,8 +487,8 @@ async def update_lean_canvas(request, source):
 #     model = data.get("model")
 #     print(f'data:{data} \n model: {model} \nsource:{source}')
 
-#     if model and model.startswith('brainstrom'):
-#         # brainstrom with model
+#     if model and model.startswith('brainstorm'):
+#         # brainstorm with model
 #         # ---------------------
 #         use_r1=False
 #         if model.endswith('-r1'):
@@ -503,14 +503,14 @@ async def update_lean_canvas(request, source):
 #             n_docs=100,
 #             feed_message_history=True,
 #             summary=summary,
-#             brainstrom=True,    # Added for brainstroming (False by default)
+#             brainstorm=True,    # Added for brainstorming (False by default)
 #             use_r1=use_r1   # whether or not use r1 model
 #         )
         
 #         # update lean canvas checkbox
 #         show_update_checkbox = qa_system.should_we_show_update_lean_canvas_checkbox(response)
 #         # print(f'response: {response}')
-#         mongo.append_brainstrom_message(source, query, response)
+#         mongo.append_brainstorm_message(source, query, response)
 #     else:
 #         # chat model
 #         # -----------
@@ -543,20 +543,20 @@ async def chat(request, source):
     projectPurpose = data.get("projectPurpose", None)
     
     if projectPurpose:
-        if projectPurpose == 'brainstrom':
-            model = 'brainstrom-' + model
+        if projectPurpose == 'brainstorm':
+            model = 'brainstorm-' + model
         else:
             model = "chat-" + model
     
     print(f'data:{data} \n model: {model} \nsource:{source}, projectPurpose: {projectPurpose}')
-    brainstrom = False
-    if model and model.startswith('brainstrom'):
-        # brainstrom prompt model (better responses while chatting)
+    brainstorm = False
+    if model and model.startswith('brainstorm'):
+        # brainstorm prompt model (better responses while chatting)
         # ------------------------
-        brainstrom = True
+        brainstorm = True
     
-    print(f'mode: {model}, brainstrom:{brainstrom} purpose:{projectPurpose}')
-    model_name = model.split('chat-')[-1].split('brainstrom-')[-1]   # one of these values : "o1", "r1", "llama3-70B"
+    print(f'mode: {model}, brainstorm:{brainstorm} purpose:{projectPurpose}')
+    model_name = model.split('chat-')[-1].split('brainstorm-')[-1]   # one of these values : "o1", "r1", "llama3-70B"
     print(f'\n\n model_name: {model_name}')
         
     summary = mongo.summary_collection.find_one({"source": source})
@@ -568,7 +568,7 @@ async def chat(request, source):
         n_docs=100,
         feed_message_history=True,
         summary=summary,
-        brainstrom=brainstrom,            # Added for brainstroming (True or False)
+        brainstorm=brainstorm,            # Added for brainstorming (True or False)
         model_name = model_name,    # one of these values : "o1", "r1", "llama3-70B"
         full_text_search=True
         # use_r1=use_r1               # whether or not use r1 model
@@ -579,9 +579,9 @@ async def chat(request, source):
     print('show_update_checkbox: {show_update_checkbox}')
     # print(f'response: {response}')
     
-    if brainstrom:
-        print(f'saving brainstrom message')
-        mongo.append_brainstrom_message(source, query, response)
+    if brainstorm:
+        print(f'saving brainstorm message')
+        mongo.append_brainstorm_message(source, query, response)
     else:
         print(f'saving chat messages')
         mongo.append_message(source, query, response)
@@ -622,9 +622,9 @@ async def model_change(request):
                 })
             messages = messages_new
         else:
-            print('brainstrom model')
-            # brainstrom messages
-            chat_history = mongo.brainstrom_collection.find({'source':source})
+            print('brainstorm model')
+            # brainstorm messages
+            chat_history = mongo.brainstorm_collection.find({'source':source})
         
             # Iterate through the cursor to get each document
             messages = []
@@ -698,8 +698,8 @@ async def delete_source(request, source):
     # Delete messages collection
     mongo.messages_collection.delete_many({'source':source})
 
-    # Delete brainstrom collection
-    mongo.brainstrom_collection.delete_many({'source':source})
+    # Delete brainstorm collection
+    mongo.brainstorm_collection.delete_many({'source':source})
 
     # Delete pdf files generated
     pdf_files = [f for f in os.listdir('summaries') if f.startswith(source+'_')]
@@ -979,7 +979,7 @@ async def update_source_new(request):
             mongo.collection.update_many({"source": source}, update_params)
             mongo.summary_collection.update_many({"source": source}, update_params)
             mongo.messages_collection.update_many({"source": source}, update_params)
-            mongo.brainstrom_collection.update_many({"source": source}, update_params)
+            mongo.brainstorm_collection.update_many({"source": source}, update_params)
             
             return sanic.response.json({"success": True})
         except Exception as ex:

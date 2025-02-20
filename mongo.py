@@ -45,8 +45,8 @@ class Mongo():
         self.messages_collection = self.db.messages
         self.messages_collection.create_index('source', unique=True)
 
-        self.brainstrom_collection = self.db.brainstrom
-        self.brainstrom_collection.create_index('source', unique=True)
+        self.brainstorm_collection = self.db.brainstorm
+        self.brainstorm_collection.create_index('source', unique=True)
 
         self.summary_collection = self.db.summaries
         self.summary_collection.create_index('source', unique=True)
@@ -113,7 +113,7 @@ class Mongo():
             print("Document updated successfully.")
         # list(messages_collection.find({}))
     
-    def append_brainstrom_message(self, source, query, response):
+    def append_brainstorm_message(self, source, query, response):
         
         '''
             * append new message to existinig message_collection
@@ -126,7 +126,7 @@ class Mongo():
         }
 
         # Add the new message to the 'messages' array for the specific source
-        result = self.brainstrom_collection.update_one(
+        result = self.brainstorm_collection.update_one(
             {"source": source},  # Filter by source
             {"$push": {"messages": new_message}},  # Add the new message to the array
             upsert=True  # Create a document if it doesn't exist
@@ -186,9 +186,9 @@ class Mongo():
             # chat messeges
             chat_history = self.messages_collection.find({'source':source})
         else:
-            print('brainstrom model')
-            # brainstrom messages
-            chat_history = self.brainstrom_collection.find({'source':source})
+            print('brainstorm model')
+            # brainstorm messages
+            chat_history = self.brainstorm_collection.find({'source':source})
 
         # Iterate through the cursor to get each document
         messages = []

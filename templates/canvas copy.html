@@ -160,6 +160,38 @@
     <!-- Main Layout -->
     <div class="max-w-6xl mx-auto flex flex-col md:flex-row mt-6">
 
+<<<<<<< HEAD
+    
+            <!-- Sidebar (Contains Everything) -->
+            <aside class="w-full md:w-1/3 bg-white p-6 mb-20 rounded-lg shadow-md">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">Project Info</h2>
+        
+                <!-- Add New Source Section -->
+                <form id="updateForm">
+                    <label class="block text-gray-700 mb-2">Product/Company Name</label>
+                    <input id="sourceInput" type="text" required class="w-full p-2 border rounded mb-4" placeholder="{{ source | capitalize }}">
+                    <label class="hidden block text-gray-700 mb-2">Bot Purpose</label>
+                    <select id="projectPurpose" class="hidden w-full px-3 py-2 border border-gray-300 rounded-md mb-4">
+                        {% if purpose == "brainstorm" %}
+                        <option value="brainstorm">brainstorm for founders</option>
+                        <option value="due_diligence">Due Diligence for Investors</option>
+                        {% elif purpose == "due_diligence" %}
+                        <option value="due_diligence">Due Diligence for Investors</option>
+                        <option value="brainstorm">brainstorm for founders</option>
+                        {% else %}
+                        fucking else
+                        <option value="brainstorm">brainstorm for founders</option>
+                        <option value="due_diligence">Due Diligence for Investors</option>
+                        {% endif %}
+                        fucking eee
+                    </select>
+                    
+                    <button onclick="updateName()" id="updateNamesubmitButton" class="bg-green-500 text-white px-4 py-2 rounded w-full mb-8 hover:bg-green-600">
+                        Update
+                    </button>
+                </form>
+=======
+>>>>>>> 0e7431f170b4da2a06a7359805b8438a1275874e
 
         <!-- Sidebar (Contains Everything) -->
         <aside class="w-full md:w-1/3 bg-white p-6 mb-20 rounded-lg shadow-md">
@@ -170,8 +202,8 @@
                 <label class="block text-gray-700 mb-2">Product/Company Name</label>
                 <input id="sourceInput" type="text" required class="w-full p-2 border rounded mb-4"
                     placeholder="{{ source | capitalize }}">
-                <label class="hidden block text-gray-700 mb-2">Bot Purpose</label>
-                <select id="projectPurpose" class="hidden w-full px-3 py-2 border border-gray-300 rounded-md mb-4">
+                <label class="block text-gray-700 mb-2">Bot Purpose</label>
+                <select id="projectPurpose" class="w-full px-3 py-2 border border-gray-300 rounded-md mb-4">
                     {% if purpose == "brainstorm" %}
                     <option value="brainstorm">Brainstorm for founders</option>
                     <option value="due_diligence">Due Diligence for Investors</option>
@@ -211,13 +243,49 @@
             <!-- Existing Sources List -->
             <h2 class="text-xl font-bold mt-6 mb-4 text-gray-800">Existing Sources</h2>
 
+
+
+
             <div class="space-y-4 max-h-80 ">
                 <!-- Dummy Source 1 -->
                 {% for data_source in data_sources %}
+<<<<<<< HEAD
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold text-lg">{{loop.index}}</span>
+                            <div class="bg-gray-100 p-2 rounded-lg shadow-md flex justify-between items-center border border-gray-300 w-full">
+                                
+                                {% if data_source._id == "mannual_input" %}
+                                <button class="text-blue-600 font-semibold hover:underline"></button>
+                                    <!-- {{source._id}} -->
+                                    <b>{{ data_source._id[:20] }}</b>
+                                </button>
+                                
+                                
+                                {% else %}
+                                <button onclick="window.open('{{data_source._id}}', '_blank')" class="text-blue-600 font-semibold hover:underline">
+                                    <!-- {{source._id}} -->
+                                    {{ data_source._id[:20] }}
+                                
+                                </button>
+                                
+                                {%endif%}
+                                
+                                <div class="flex gap-4">
+                                    <!-- Show Scraped Data Button -->
+                                    <a href="/data/{{source}}" class="bg-blue-500 text-white px-2 py-1  rounded-md hover:bg-blue-600">
+                                        Show Data
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    
+=======
                 <div class="flex items-center gap-2">
                     <span class="font-semibold text-lg">{{loop.index}}</span>
                     <div
                         class="bg-gray-100 p-2 rounded-lg shadow-md flex justify-between items-center border border-gray-300 w-full">
+>>>>>>> 0e7431f170b4da2a06a7359805b8438a1275874e
 
                         {% if data_source._id == "mannual_input" %}
                         <button class="text-blue-600 font-semibold hover:underline"></button>
@@ -454,6 +522,7 @@
     </script>
     <!-- JavaScript -->
     <script>
+<<<<<<< HEAD
 
         function checkAndReloadIfQuestionMark() {
             /*
@@ -469,6 +538,9 @@
         }
         window.addEventListener('load', checkAndReloadIfQuestionMark);
         function addSource(){
+=======
+        function addSource() {
+>>>>>>> 0e7431f170b4da2a06a7359805b8438a1275874e
             const spinnerOverlay = document.getElementById('add_url-spinner-overlay');
             spinnerOverlay.classList.remove('hidden');
 
@@ -735,7 +807,7 @@
 
             // Determine the name based on selected value
             const selectedValue = dropdown.value;
-            const assistantName = selectedValue.startsWith('brainstrom') ? 'Investor:' : 'Co-Founder:';
+            const assistantName = selectedValue.startsWith('brainstorm') ? 'Investor:' : 'Co-Founder:';
 
             // Update all elements with the new name
             Array.from(assistantNameElements).forEach(element => {
