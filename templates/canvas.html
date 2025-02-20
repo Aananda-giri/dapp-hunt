@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,14 +13,17 @@
             width: 8px;
             height: 8px;
         }
+
         ::-webkit-scrollbar-track {
             background: #f1f1f1;
             border-radius: 4px;
         }
+
         ::-webkit-scrollbar-thumb {
             background: #888;
             border-radius: 4px;
         }
+
         ::-webkit-scrollbar-thumb:hover {
             background: #666;
         }
@@ -30,7 +34,7 @@
             overflow-x: auto;
             line-height: 1.6;
         }
-        
+
         .markdown-content table {
             display: block;
             max-width: 100%;
@@ -38,7 +42,7 @@
             border-collapse: collapse;
             margin: 1rem 0;
         }
-        
+
         .markdown-content pre {
             max-width: 100%;
             overflow-x: auto;
@@ -49,7 +53,7 @@
             border-radius: 0.5rem;
             margin: 1rem 0;
         }
-        
+
         .markdown-content img {
             max-width: 100%;
             height: auto;
@@ -61,7 +65,7 @@
             transition: all 0.3s ease;
             min-height: 200px;
         }
-        
+
         .sticky-note:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -69,8 +73,15 @@
 
         /* Chat message animations */
         @keyframes slideIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .message-animation {
@@ -121,17 +132,21 @@
         }
     </style>
 </head>
+
 <body class="bg-gray-100">
-    
-    <div id="add_url-spinner-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center z-50 text-white text-lg font-bold backdrop-filter backdrop-blur-sm">
+
+    <div id="add_url-spinner-overlay"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center z-50 text-white text-lg font-bold backdrop-filter backdrop-blur-sm">
         <div class="bg-white p-8 rounded-lg shadow-lg text-gray-800 flex flex-col items-center">
-            <div class="w-16 h-16 border-4 border-t-4 border-t-transparent border-green-500 rounded-full animate-spin mb-4"></div>
+            <div
+                class="w-16 h-16 border-4 border-t-4 border-t-transparent border-green-500 rounded-full animate-spin mb-4">
+            </div>
             <div id="add_url-spinner-overlay-content">
                 Adding URL/Dsata (might take ~1 min)
             </div>
         </div>
     </div>
-    
+
 
 
     <!-- Navbar -->
@@ -175,29 +190,63 @@
                     </button>
                 </form>
 
-                <form id="sourceForm">
+        <!-- Sidebar (Contains Everything) -->
+        <aside class="w-full md:w-1/3 bg-white p-6 mb-20 rounded-lg shadow-md">
+            <h2 class="text-xl font-bold mb-4 text-gray-800">Project Info</h2>
 
-                    <h2 class="text-xl font-bold mb-4 text-gray-800">Add New Source</h2>
-            
-                    <label class="block text-gray-700 mb-2">Enter URLs/Data</label>
-                    <div id="urlInputs">
-                        <input id="sourceUrl" type="text" required class="w-full p-2 border rounded mb-4" placeholder="Enter URL/Data">
-                    </div>
-        
-                    <button type="submit" onclick="addSource(); event.stopPropagation();" id="addSourceSubmitButton" class="bg-green-500 text-white px-4 py-2 rounded w-full mb-8 hover:bg-green-600">
-                        Add Source
-                    </button>
-                </form>
-        
-                <!-- Existing Sources List -->
-                <h2 class="text-xl font-bold mt-6 mb-4 text-gray-800">Existing Sources</h2>
+            <!-- Add New Source Section -->
+            <form id="updateForm">
+                <label class="block text-gray-700 mb-2">Product/Company Name</label>
+                <input id="sourceInput" type="text" required class="w-full p-2 border rounded mb-4"
+                    placeholder="{{ source | capitalize }}">
+                <label class="block text-gray-700 mb-2">Bot Purpose</label>
+                <select id="projectPurpose" class="w-full px-3 py-2 border border-gray-300 rounded-md mb-4">
+                    {% if purpose == "brainstorm" %}
+                    <option value="brainstorm">Brainstorm for founders</option>
+                    <option value="due_diligence">Due Diligence for Investors</option>
+                    {% elif purpose == "due_diligence" %}
+                    <option value="due_diligence">Due Diligence for Investors</option>
+                    <option value="brainstorm">Brainstorm for founders</option>
+                    {% else %}
+                    fucking else
+                    <option value="brainstorm">Brainstorm for founders</option>
+                    <option value="due_diligence">Due Diligence for Investors</option>
+                    {% endif %}
+                    fucking eee
+                </select>
+
+                <button onclick="updateName()" id="updateNamesubmitButton"
+                    class="bg-green-500 text-white px-4 py-2 rounded w-full mb-8 hover:bg-green-600">
+                    Update
+                </button>
+            </form>
+
+            <form id="sourceForm">
+
+                <h2 class="text-xl font-bold mb-4 text-gray-800">Add New Source</h2>
+
+                <label class="block text-gray-700 mb-2">Enter URLs/Data</label>
+                <div id="urlInputs">
+                    <input id="sourceUrl" type="text" required class="w-full p-2 border rounded mb-4"
+                        placeholder="Enter URL/Data">
+                </div>
+
+                <button type="submit" onclick="addSource(); event.stopPropagation();" id="addSourceSubmitButton"
+                    class="bg-green-500 text-white px-4 py-2 rounded w-full mb-8 hover:bg-green-600">
+                    Add Source
+                </button>
+            </form>
+
+            <!-- Existing Sources List -->
+            <h2 class="text-xl font-bold mt-6 mb-4 text-gray-800">Existing Sources</h2>
 
 
 
 
-                <div class="space-y-4 max-h-80 ">
+            <div class="space-y-4 max-h-80 ">
                 <!-- Dummy Source 1 -->
                 {% for data_source in data_sources %}
+<<<<<<< HEAD
                         <div class="flex items-center gap-2">
                             <span class="font-semibold text-lg">{{loop.index}}</span>
                             <div class="bg-gray-100 p-2 rounded-lg shadow-md flex justify-between items-center border border-gray-300 w-full">
@@ -228,9 +277,44 @@
                         </div>
                     {% endfor %}
                     
+=======
+                <div class="flex items-center gap-2">
+                    <span class="font-semibold text-lg">{{loop.index}}</span>
+                    <div
+                        class="bg-gray-100 p-2 rounded-lg shadow-md flex justify-between items-center border border-gray-300 w-full">
+>>>>>>> 0e7431f170b4da2a06a7359805b8438a1275874e
 
-                    <!-- Dummy Source 3 -->
-                    <!-- <div class="flex items-center gap-2">
+                        {% if data_source._id == "mannual_input" %}
+                        <button class="text-blue-600 font-semibold hover:underline"></button>
+                        <!-- {{source._id}} -->
+                        <b>{{ data_source._id[:20] }}</b>
+                        </button>
+
+                        <script>console.log('fucking if');</script>
+                        {% else %}
+                        <button onclick="window.open('{{data_source._id}}', '_blank')"
+                            class="text-blue-600 font-semibold hover:underline">
+                            <!-- {{source._id}} -->
+                            {{ data_source._id[:20] }}
+                            <script>console.log('fucking else');</script>
+                        </button>
+
+                        {%endif%}
+
+                        <div class="flex gap-4">
+                            <!-- Show Scraped Data Button -->
+                            <a href="/data/{{source}}"
+                                class="bg-blue-500 text-white px-2 py-1  rounded-md hover:bg-blue-600">
+                                Show Data
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+
+                <!-- Dummy Source 3 -->
+                <!-- <div class="flex items-center gap-2">
                         <span class="font-semibold text-lg">3.</span>
                         <div class="bg-gray-100 p-2 rounded-lg shadow-md flex justify-between items-center border border-gray-300 w-full">
                             <button onclick="window.open('https://example3.com', '_blank')" class="text-blue-600 font-semibold hover:underline">
@@ -244,27 +328,75 @@
                             </div>
                         </div>
                     </div> -->
-                    <div id="modal-https://example3.com" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
-                        <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-                            <h3 class="text-xl font-bold mb-4">https://example3.com</h3>
-                            <p class="text-gray-700 ">This is the scraped data from https://example3.com.</p>
-                            <div class="flex justify-end gap-4 mt-4">
-                                <button onclick="closeModal('https://example3.com')" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">
-                                    Cancel
-                                </button>
-                                <button onclick="deleteSource('https://example3.com')" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">
-                                    Delete
-                                </button>
-                            </div>
+                <div id="modal-https://example3.com"
+                    class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+                    <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+                        <h3 class="text-xl font-bold mb-4">https://example3.com</h3>
+                        <p class="text-gray-700 ">This is the scraped data from https://example3.com.</p>
+                        <div class="flex justify-end gap-4 mt-4">
+                            <button onclick="closeModal('https://example3.com')"
+                                class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">
+                                Cancel
+                            </button>
+                            <button onclick="deleteSource('https://example3.com')"
+                                class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">
+                                Delete
+                            </button>
                         </div>
                     </div>
                 </div>
-            </aside>
+            </div>
 
-        
-    
-    
-        
+
+
+
+
+
+            <!-- Unanswered questions List -->
+            <div class="flex justify-between items-center mt-12 mb-4">
+                <h2 class="text-xl font-bold text-gray-800">Insufficient Context for</h2>
+                <button class="text-blue-600 font-semibold hover:underline">Copy All</button>
+            </div>
+
+            <!-- Question 1 -->
+            <div class="space-y-4 max-h-80 ">
+                <div class="flex items-center gap-2">
+                    <span class="font-semibold text-lg">1</span>
+                    <div
+                        class="bg-gray-100 p-2 rounded-lg shadow-md flex justify-between items-center border border-gray-300 w-full">
+
+                        <div class="text-blue-600 text-md font-semibold  w-full truncate" >
+                            How does better therapy reward doctors?
+                        </div>
+                    </div>
+                </div>
+
+            <!-- Question 2 -->
+
+            <div class="space-y-4 max-h-80 ">
+                <div class="flex items-center gap-2">
+                    <span class="font-semibold text-lg">2</span>
+                    <div
+                        class="bg-gray-100 p-2 rounded-lg shadow-md flex justify-between items-center border border-gray-300 w-full">
+
+                        <div class="text-blue-600 text-md font-semibold  w-full truncate" >
+                            How do you plan to make money?
+                        </div>
+                    </div>
+                </div>
+
+     
+            </div>
+        </aside>
+
+
+
+
+
+
+
+
+
 
         <!-- Main Section (Source Summary & Chat) -->
         <main class="w-full md:w-2/3 md:ml-6 mb-20">
@@ -275,7 +407,8 @@
                     <div class="sticky-note p-6 rounded-xl shadow-md relative">
                         <h2 class="font-bold text-xl mb-4 text-gray-800">{{ key|title }}</h2>
                         <p class="text-gray-700 editable" style="white-space: pre-line;">{{ value }}</p>
-                        <button class="edit-btn absolute top-4 right-4 p-2 bg-gray-200 rounded-full hidden hover:bg-gray-300 transition-colors">
+                        <button
+                            class="edit-btn absolute top-4 right-4 p-2 bg-gray-200 rounded-full hidden hover:bg-gray-300 transition-colors">
                             ✏️
                         </button>
                     </div>
@@ -287,7 +420,8 @@
             <div class="bg-white p-6 rounded shadow-md">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gray-900">AI Discussion ✨</h2>
-                    <button onclick="downloadConversation();" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                    <button onclick="downloadConversation();"
+                        class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
                         ⬇️ Download Chat
                     </button>
                 </div>
@@ -306,18 +440,19 @@
                             </optgroup>
                         </select>
                         <label class="flex items-center space-x-3">
-                            <input type="checkbox" id="private_inference" class="toggle-checkbox h-5 w-5 text-blue-600" onchange="toggleModels(this.checked)">
+                            <input type="checkbox" id="private_inference" class="toggle-checkbox h-5 w-5 text-blue-600"
+                                onchange="toggleModels(this.checked)">
                             <span class="text-gray-700">Enable Privacy powered by Atoma network</span>
                         </label></label>
                     </div>
-                 
+
                 </div>
-               
+
 
                 <!-- Chat Messages -->
                 <div id="chat-messages" class="mb-6 h-96 overflow-y-auto p-4 bg-gray-50 rounded-lg shadow-inner">
                     <div id="say_hi_div" class="bubble">say hi!</div>
-                    
+
                     {% for message in chat_history %}
                     <div class="message-animation mb-4">
                         <div class="flex justify-end mb-4">
@@ -339,10 +474,10 @@
 
                 <!-- Chat Input -->
                 <form id="chatForm" class="flex gap-4">
-                    <input id="chat-input" type="text" name="query" 
-                        class="flex-1 p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm" 
+                    <input id="chat-input" type="text" name="query"
+                        class="flex-1 p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                         placeholder="Ask a question..." required>
-                    <button id="chatSubmitButton" 
+                    <button id="chatSubmitButton"
                         class="action-button bg-blue-500 text-white px-8 py-4 rounded-lg hover:bg-blue-600 flex items-center gap-2 font-bold transition-colors">
                         <span>Send</span>
                         <span id="loadingIndicator" class="hidden">⏳</span>
@@ -354,21 +489,22 @@
     </div>
     <footer class="bg-gray-900 text-white text-center py-6">
         <div class="flex justify-center items-center">
-            <img src="https://cdn.dribbble.com/userupload/17866585/file/original-8790f17854ac67ff843423bab00dc0cd.png?resize=400x0" alt="PitchReady Logo" class="h-10 mr-3 rounded-full">
+            <img src="https://cdn.dribbble.com/userupload/17866585/file/original-8790f17854ac67ff843423bab00dc0cd.png?resize=400x0"
+                alt="PitchReady Logo" class="h-10 mr-3 rounded-full">
             <p>&copy; 2025 PitchReady. All Rights Reserved.</p>
         </div>
     </footer>
 
-        
+
     <script>
         function openModal(source) {
             document.getElementById(`modal-${source}`).classList.remove('hidden');
         }
-    
+
         function closeModal(source) {
             document.getElementById(`modal-${source}`).classList.add('hidden');
         }
-    
+
         async function deleteSource(source) {
             if (confirm(`Are you sure you want to delete ${source}?`)) {
                 try {
@@ -383,6 +519,7 @@
     </script>
     <!-- JavaScript -->
     <script>
+<<<<<<< HEAD
 
         function checkAndReloadIfQuestionMark() {
             /*
@@ -398,16 +535,19 @@
         }
         window.addEventListener('load', checkAndReloadIfQuestionMark);
         function addSource(){
+=======
+        function addSource() {
+>>>>>>> 0e7431f170b4da2a06a7359805b8438a1275874e
             const spinnerOverlay = document.getElementById('add_url-spinner-overlay');
             spinnerOverlay.classList.remove('hidden');
 
             // Extract source from the current URL
             const source = window.location.pathname.split("/").pop();;
-            
+
             const new_input = document.getElementById('sourceUrl').value;
             console.log(`Adding url/data: ${new_input} to source: ${source}`);
-            
-            
+
+
             // return;
             if (!new_input) {
                 alert("Could not find textarea content");
@@ -428,27 +568,27 @@
                 },
                 body: JSON.stringify(data)
             })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    // reload the page
-                    location.reload();
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        // reload the page
+                        location.reload();
 
-                    alert("Update successful");
-                } else {
-                    alert("Update failed: " + result.error);
-                }
-            })
-            .catch(error => {
-                alert("Request failed: " + error);
-            });
+                        alert("Update successful");
+                    } else {
+                        alert("Update failed: " + result.error);
+                    }
+                })
+                .catch(error => {
+                    alert("Request failed: " + error);
+                });
         }
 
 
-        function updateName(){
+        function updateName() {
             const newName = document.getElementById('sourceInput').value;
             const newPurpose = document.getElementById('projectPurpose').value;
-            
+
             if (!newName) {
                 alert("Name can't be empty.");
                 return;
@@ -462,13 +602,13 @@
 
             // Extract source from the current URL
             const source = window.location.pathname.split("/").pop();;
-            
+
             console.log(`updating ${source} -> ${newName} purpose->${newPurpose}`);
 
             // Prepare data for request
             let data = {
                 source: source,
-                newName: newName, 
+                newName: newName,
                 newPurpose: newPurpose,
             };
 
@@ -480,20 +620,20 @@
                 },
                 body: JSON.stringify(data)
             })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    // reload the page
-                    window.location.href = `/canvas/${newName}`;
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        // reload the page
+                        window.location.href = `/canvas/${newName}`;
 
-                    alert("Update successful");
-                } else {
-                    alert("Update failed: " + result.error);
-                }
-            })
-            .catch(error => {
-                alert("Request failed: " + error);
-            });
+                        alert("Update successful");
+                    } else {
+                        alert("Update failed: " + result.error);
+                    }
+                })
+                .catch(error => {
+                    alert("Request failed: " + error);
+                });
         }
 
 
@@ -517,114 +657,114 @@
         // };
     </script>
 
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        document.querySelectorAll(".sticky-note").forEach(note => {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".sticky-note").forEach(note => {
 
-            const pElement = note.querySelector(".editable");
-            const editBtn = document.createElement("button");
-            editBtn.innerHTML = "✏️"; // Edit icon
-            editBtn.classList.add("absolute", "top-2", "right-2", "p-1", "bg-gray-200", "rounded", "hover:bg-gray-300", "hidden");
-    
-            // Show edit button on hover
-            note.addEventListener("mouseenter", () => editBtn.classList.remove("hidden"));
-            note.addEventListener("mouseleave", () => editBtn.classList.add("hidden"));
-    
-            editBtn.addEventListener("click", function () {
-                const originalText = pElement.innerText;
-                const title = note.querySelector("h2").innerText;
-                const source = window.location.pathname.split("/").pop(); // Extract source from URL
-    
-                // Replace <p> with <textarea>
-                const textarea = document.createElement("textarea");
-                textarea.value = originalText;
-                textarea.classList.add("w-full", "p-2", "border", "rounded");
-    
-                const saveBtn = document.createElement("button");
-                saveBtn.innerText = "Save";
-                saveBtn.classList.add("bg-blue-500", "text-white", "p-2", "rounded", "mt-2");
-    
-                pElement.replaceWith(textarea);
-                note.appendChild(saveBtn);
-    
-                saveBtn.addEventListener("click", async function () {
-                    // Show the spinner
-                    const spinnerOverlay = document.getElementById("add_url-spinner-overlay");
-                    spinnerOverlay.textContent = "add_url-spinner-overlay";
-                    spinnerOverlay.classList.remove('hidden');
-                    spinnerOverlay.classList.add('flex');
-                    
-                    const newEditedText = textarea.value;
-    
-                    const response = await fetch("/update_summary", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({ title: title, text: newEditedText, source: source })
+                const pElement = note.querySelector(".editable");
+                const editBtn = document.createElement("button");
+                editBtn.innerHTML = "✏️"; // Edit icon
+                editBtn.classList.add("absolute", "top-2", "right-2", "p-1", "bg-gray-200", "rounded", "hover:bg-gray-300", "hidden");
+
+                // Show edit button on hover
+                note.addEventListener("mouseenter", () => editBtn.classList.remove("hidden"));
+                note.addEventListener("mouseleave", () => editBtn.classList.add("hidden"));
+
+                editBtn.addEventListener("click", function () {
+                    const originalText = pElement.innerText;
+                    const title = note.querySelector("h2").innerText;
+                    const source = window.location.pathname.split("/").pop(); // Extract source from URL
+
+                    // Replace <p> with <textarea>
+                    const textarea = document.createElement("textarea");
+                    textarea.value = originalText;
+                    textarea.classList.add("w-full", "p-2", "border", "rounded");
+
+                    const saveBtn = document.createElement("button");
+                    saveBtn.innerText = "Save";
+                    saveBtn.classList.add("bg-blue-500", "text-white", "p-2", "rounded", "mt-2");
+
+                    pElement.replaceWith(textarea);
+                    note.appendChild(saveBtn);
+
+                    saveBtn.addEventListener("click", async function () {
+                        // Show the spinner
+                        const spinnerOverlay = document.getElementById("add_url-spinner-overlay");
+                        spinnerOverlay.textContent = "add_url-spinner-overlay";
+                        spinnerOverlay.classList.remove('hidden');
+                        spinnerOverlay.classList.add('flex');
+
+                        const newEditedText = textarea.value;
+
+                        const response = await fetch("/update_summary", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({ title: title, text: newEditedText, source: source })
+                        });
+
+                        const result = await response.json();
+                        if (result.status === "success") {
+                            // reload the page
+                            location.reload();
+                        }
                     });
-    
-                    const result = await response.json();
-                    if (result.status === "success") {
-                        // reload the page
-                        location.reload();
-                    }
                 });
+
+                note.appendChild(editBtn);
             });
-    
-            note.appendChild(editBtn);
         });
-    });
-</script>
+    </script>
 
-<script>
-    function noUpdateLeanCanvasUpdate(){
-        
-        // hide
-        document.getElementById('update_lean_canvas').style.display='none'; // none is
-    }
-    async function updateLeanCanvasUpdate() {
-        
-        // Show the spinner
-        const spinnerOverlay = document.getElementById('update-summary-spinner-overlay');
-        spinnerOverlay.textContent = "add_url-spinner-overlay";
-        spinnerOverlay.classList.remove('hidden');
-        spinnerOverlay.classList.add('flex');
-        
-        // hide
-        document.getElementById('update_lean_canvas').style.display='none'; // none is
-        const currentUrl = window.location.href;
-        const source = currentUrl.split('/').pop();
-        const selectedModel = document.getElementById('model_selector').value;
-        try {
-            // Send the request
-            const response = await fetch(`/update_lean_canvas/{{ source }}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                     model: selectedModel
-                })
-            });
+    <script>
+        function noUpdateLeanCanvasUpdate() {
 
-            // console.log('response', response);
-            const result = await response.json();
-            console.log('result', result);
-            
-            // todo: Reload the page
-            location.reload();
-            // todo: sanic app listening to this api call.
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Something went wrong. Please try again.');
-        } finally {
-            // Re-enable the button and hide the loading indicator
-            submitButton.disabled = false;
-            loadingIndicator.classList.add('hidden');
+            // hide
+            document.getElementById('update_lean_canvas').style.display = 'none'; // none is
         }
-    }
-</script>
+        async function updateLeanCanvasUpdate() {
 
-<script>
+            // Show the spinner
+            const spinnerOverlay = document.getElementById('update-summary-spinner-overlay');
+            spinnerOverlay.textContent = "add_url-spinner-overlay";
+            spinnerOverlay.classList.remove('hidden');
+            spinnerOverlay.classList.add('flex');
+
+            // hide
+            document.getElementById('update_lean_canvas').style.display = 'none'; // none is
+            const currentUrl = window.location.href;
+            const source = currentUrl.split('/').pop();
+            const selectedModel = document.getElementById('model_selector').value;
+            try {
+                // Send the request
+                const response = await fetch(`/update_lean_canvas/{{ source }}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: selectedModel
+                    })
+                });
+
+                // console.log('response', response);
+                const result = await response.json();
+                console.log('result', result);
+
+                // todo: Reload the page
+                location.reload();
+                // todo: sanic app listening to this api call.
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Something went wrong. Please try again.');
+            } finally {
+                // Re-enable the button and hide the loading indicator
+                submitButton.disabled = false;
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+    </script>
+
+    <script>
         if (document.getElementById('chat-messages').children.length < 2) {
             console.log('len. is zero');
             // Get the div with id 'say_hi_div'
@@ -641,46 +781,46 @@
 
                 // Hide the 'say_hi_div' by adding the 'hide' class
                 say_hi_div.classList.add('hide');
-                document.getElementById('say_hi_div').style.display='none'
+                document.getElementById('say_hi_div').style.display = 'none'
 
                 // Get the submit button and click it
                 const submit_button = document.getElementById('chatSubmitButton');
                 submit_button.click();
             };
         } else {
-            document.getElementById('say_hi_div').style.display='none';
+            document.getElementById('say_hi_div').style.display = 'none';
         }
-</script>
+    </script>
 
-<script>
+    <script>
 
-    // function to update assistant name
-    function updateAssistantName() {
-        // Get the dropdown element
-        const dropdown = document.getElementById('model_selector');
-        
-        // Get all elements with class 'assistant_user_name'
-        const assistantNameElements = document.getElementsByClassName('assistant_user_name');
-        
-        // Determine the name based on selected value
-        const selectedValue = dropdown.value;
-        const assistantName = selectedValue.startsWith('brainstrom') ? 'Investor:' : 'Co-Founder:';
-        
-        // Update all elements with the new name
-        Array.from(assistantNameElements).forEach(element => {
-            element.textContent = assistantName;
-        });
-    }
+        // function to update assistant name
+        function updateAssistantName() {
+            // Get the dropdown element
+            const dropdown = document.getElementById('model_selector');
 
-    // Add event listener to dropdown for changes
-    document.getElementById('model_selector').addEventListener('change', updateAssistantName);
+            // Get all elements with class 'assistant_user_name'
+            const assistantNameElements = document.getElementsByClassName('assistant_user_name');
 
-    // Call the function once on page load to set initial state
-    updateAssistantName();
-    
-    // give them different colours
-    document.addEventListener("DOMContentLoaded", function () {
-        function replaceAsterisksWithBullets() {
+            // Determine the name based on selected value
+            const selectedValue = dropdown.value;
+            const assistantName = selectedValue.startsWith('brainstrom') ? 'Investor:' : 'Co-Founder:';
+
+            // Update all elements with the new name
+            Array.from(assistantNameElements).forEach(element => {
+                element.textContent = assistantName;
+            });
+        }
+
+        // Add event listener to dropdown for changes
+        document.getElementById('model_selector').addEventListener('change', updateAssistantName);
+
+        // Call the function once on page load to set initial state
+        updateAssistantName();
+
+        // give them different colours
+        document.addEventListener("DOMContentLoaded", function () {
+            function replaceAsterisksWithBullets() {
                 // Get all text nodes in the document
                 const walker = document.createTreeWalker(
                     document.body,
@@ -692,130 +832,130 @@
                 // Store text nodes that need to be modified
                 const nodesToReplace = [];
                 let node;
-                
+
                 // Collect all text nodes
                 while (node = walker.nextNode()) {
                     if (node.textContent.includes('*')) {
                         nodesToReplace.push(node);
                     }
                 }
-                
+
                 // Replace asterisks with bullet points in each node
                 nodesToReplace.forEach(node => {
                     node.textContent = node.textContent.replace(/\*/g, '•');
                 });
-        }
-        replaceAsterisksWithBullets();
+            }
+            replaceAsterisksWithBullets();
 
-        // Get all elements with class 'markdown-content'
-        const colors = [
-            "bg-red-100", "bg-blue-100", "bg-green-100", 
-            "bg-yellow-100", "bg-pink-100", "bg-purple-100", 
-            "bg-indigo-100", "bg-teal-100"
-        ];
-        document.querySelectorAll(".sticky-note").forEach((note, index) => {
-            note.classList.add(colors[index % colors.length]); // Assign color in a cycle
-        });
-        
-    });
-
-    function convertMarkdownContent() {
-        return;
-        // Select all elements with the class 'markdown-content'
-        const mdElements = document.querySelectorAll('.markdown-content');
-        
-        // Loop through each element and convert its markdown to HTML
-        mdElements.forEach(mdElement => {
-            const mdText = mdElement.textContent; // Get raw markdown text
-            const htmlContent = marked.parse(mdText); // Convert markdown to HTML
-            mdElement.innerHTML = htmlContent; // Replace markdown with HTML
-        });
-    }
-    convertMarkdownContent();
-
-    // Call the function once the DOM is fully loaded
-    // document.addEventListener('DOMContentLoaded', convertMarkdownContent);
-
-    async function downloadConversation() {
-        const currentUrl = window.location.href;
-        const source = currentUrl.split('/').pop();
-        const selectedModel = document.getElementById('model_selector').value;
-        
-        try {
-            const response = await fetch(`/download_conversation/${source}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: selectedModel
-                })
+            // Get all elements with class 'markdown-content'
+            const colors = [
+                "bg-red-100", "bg-blue-100", "bg-green-100",
+                "bg-yellow-100", "bg-pink-100", "bg-purple-100",
+                "bg-indigo-100", "bg-teal-100"
+            ];
+            document.querySelectorAll(".sticky-note").forEach((note, index) => {
+                note.classList.add(colors[index % colors.length]); // Assign color in a cycle
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+        });
 
-            // Get the blob from the response
-            const blob = await response.blob();
-            
-            // Create a link to download the blob
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${source}_conversation.json`;
-            document.body.appendChild(a);
-            a.click();
-            
-            // Cleanup
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Something went wrong. Please try again.');
+        function convertMarkdownContent() {
+            return;
+            // Select all elements with the class 'markdown-content'
+            const mdElements = document.querySelectorAll('.markdown-content');
+
+            // Loop through each element and convert its markdown to HTML
+            mdElements.forEach(mdElement => {
+                const mdText = mdElement.textContent; // Get raw markdown text
+                const htmlContent = marked.parse(mdText); // Convert markdown to HTML
+                mdElement.innerHTML = htmlContent; // Replace markdown with HTML
+            });
         }
-    }
-    document.getElementById('chatForm').onsubmit = async (e) => {
-        e.preventDefault();
+        convertMarkdownContent();
 
-        // Get references to the button and loading indicator
-        const submitButton = document.getElementById('chatSubmitButton');
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        const projectPurpose = document.getElementById('projectPurpose').value;
+        // Call the function once the DOM is fully loaded
+        // document.addEventListener('DOMContentLoaded', convertMarkdownContent);
 
-        // Disable the button and show the loading indicator
-        submitButton.disabled = true;
-        loadingIndicator.classList.remove('hidden');
+        async function downloadConversation() {
+            const currentUrl = window.location.href;
+            const source = currentUrl.split('/').pop();
+            const selectedModel = document.getElementById('model_selector').value;
 
-        // Get the query
-        const query = e.target.query.value;
-        
-        // Get the selected model
-        const selectedModel = document.getElementById('model_selector').value;
-        console.log('model', selectedModel);
+            try {
+                const response = await fetch(`/download_conversation/${source}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: selectedModel
+                    })
+                });
 
-        try {
-            // Send the request
-            const response = await fetch(`/chat/{{ source }}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                        query:query,
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Get the blob from the response
+                const blob = await response.blob();
+
+                // Create a link to download the blob
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${source}_conversation.json`;
+                document.body.appendChild(a);
+                a.click();
+
+                // Cleanup
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Something went wrong. Please try again.');
+            }
+        }
+        document.getElementById('chatForm').onsubmit = async (e) => {
+            e.preventDefault();
+
+            // Get references to the button and loading indicator
+            const submitButton = document.getElementById('chatSubmitButton');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const projectPurpose = document.getElementById('projectPurpose').value;
+
+            // Disable the button and show the loading indicator
+            submitButton.disabled = true;
+            loadingIndicator.classList.remove('hidden');
+
+            // Get the query
+            const query = e.target.query.value;
+
+            // Get the selected model
+            const selectedModel = document.getElementById('model_selector').value;
+            console.log('model', selectedModel);
+
+            try {
+                // Send the request
+                const response = await fetch(`/chat/{{ source }}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: query,
                         model: selectedModel,
                         projectPurpose: projectPurpose
-                })
-            });
+                    })
+                });
 
-            // console.log('response', response);
-            const result = await response.json();
-            console.log('result', result);
-            console.log('query', query);
+                // console.log('response', response);
+                const result = await response.json();
+                console.log('result', result);
+                console.log('query', query);
 
-            // Append the response to the chat messages
-            const messagesDiv = document.getElementById('chat-messages');
-            
-            if (result.show_update_checkbox){
-                console.log(`show update checkbox is true <this should be true: ${result.show_update_checkbox}>`);
-                messagesDiv.innerHTML += `
+                // Append the response to the chat messages
+                const messagesDiv = document.getElementById('chat-messages');
+
+                if (result.show_update_checkbox) {
+                    console.log(`show update checkbox is true <this should be true: ${result.show_update_checkbox}>`);
+                    messagesDiv.innerHTML += `
                 <div class="flex justify-end mb-4">
                     <div class="w-4/5 p-3 rounded-lg bg-white shadow">
                         <div class="font-bold text-blue-600">You:</div>
@@ -852,11 +992,11 @@
                         </button>
                     </div>
                 </div>
-                    `;    
-                // document.getElementById('update_lean_canvas').style.display='';
-            } else {
-                console.log(`show update checkbox is false . <this should be false: ${result.show_update_checkbox}>`);
-                messagesDiv.innerHTML += `
+                    `;
+                    // document.getElementById('update_lean_canvas').style.display='';
+                } else {
+                    console.log(`show update checkbox is false . <this should be false: ${result.show_update_checkbox}>`);
+                    messagesDiv.innerHTML += `
                     <div class="flex justify-end mb-4">
                         <div class="w-4/5 p-3 rounded-lg bg-white shadow">
                             <div class="font-bold text-blue-600">You:</div>
@@ -875,179 +1015,180 @@
                         </div>
                     </div>
                 </div>`;
+                }
+                // assistant names: Investor, cofounder
+                updateAssistantName();
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+                // Clear the input field
+                e.target.query.value = '';
+
+                // format markdown content
+                convertMarkdownContent();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Something went wrong. Please try again.');
+            } finally {
+                // Re-enable the button and hide the loading indicator
+                submitButton.disabled = false;
+                loadingIndicator.classList.add('hidden');
             }
-            // assistant names: Investor, cofounder
-            updateAssistantName();
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-            // Clear the input field
-            e.target.query.value = '';
-
-            // format markdown content
-            convertMarkdownContent();
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Something went wrong. Please try again.');
-        } finally {
-            // Re-enable the button and hide the loading indicator
-            submitButton.disabled = false;
-            loadingIndicator.classList.add('hidden');
-        }
-    };
-
-    async function regenerateSummary() {
-        // Show the spinner
-        const spinnerOverlay = document.getElementById('spinner-overlay');
-        spinnerOverlay.classList.remove('hidden');
-        spinnerOverlay.classList.add('flex');
-
-        // Extract the source from the current URL
-        const currentUrl = window.location.href;
-        const source = currentUrl.split('/').pop();
-
-        try {
-            // Make the POST request
-            const response = await fetch('/regenerate_summary', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ source })
-            });
-
-            console.log('response', response);
-
-            // Parse the response
-            const result = await response.json();
-
-            console.log('result', result);
-
-            // Check if the server provided a redirect URL
-            if (result.status === 'success' && result.redirect_url) {
-                // Navigate to the redirect URL
-                window.location.href = result.redirect_url;
-            } else {
-                console.error('Failed to regenerate summary:', result);
-            }
-        } catch (error) {
-            console.error('Error during summary regeneration:', error);
-        } finally {
-            // Hide the spinner (if still on the same page)
-            spinnerOverlay.classList.add('hidden');
-            spinnerOverlay.classList.remove('flex');
-        }
-    }
-
-    // model change action
-    const modelSelect = document.getElementById('model_selector');
-    const chatMessagesDiv = document.getElementById('chat-messages');
-
-    // Listen for changes on the dropdown
-    modelSelect.addEventListener('change', function() {
-        const selectedModel = modelSelect.value;
-
-        // Extract the source from the URL.
-        // Assuming URL format: http://0.0.0.0:5000/source/uniswap2 => source is "uniswap2"
-        const pathParts = window.location.pathname.split('/');
-        const source = pathParts[pathParts.length - 1];
-
-        // Prepare the payload with the new model and source
-        const payload = {
-        model: selectedModel,
-        source: source
         };
 
-        // Send a POST request to the backend at '/model_change'
-        fetch('/model_change', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-        })
-        .then(response => {
-        if (!response.ok) {
-            console.log('response', response);
-            throw new Error('Network response not OK');
-            
-        }
-        return response.json();
-        })
-        .then(data => {
-        // Check if the response contains new messages
-        if (data.messages && data.messages.length > 0) {
-            // Clear the current chat messages
-            chatMessagesDiv.innerHTML = '';
+        async function regenerateSummary() {
+            // Show the spinner
+            const spinnerOverlay = document.getElementById('spinner-overlay');
+            spinnerOverlay.classList.remove('hidden');
+            spinnerOverlay.classList.add('flex');
 
-            // Loop through each message and create new elements
-            data.messages.forEach(message => {
-            // Create container for user query
-            const queryContainer = document.createElement('div');
-            queryContainer.className = 'mb-4 p-3 rounded-lg bg-white shadow';
-            
-            const queryLabel = document.createElement('div');
-            queryLabel.className = 'font-bold text-blue-600';
-            queryLabel.textContent = 'You:';
-            
-            const queryContent = document.createElement('div');
-            // Mark as markdown content so it gets converted later
-            queryContent.className = 'text-gray-800';
-            queryContent.textContent = message.query;
-            
-            queryContainer.appendChild(queryLabel);
-            queryContainer.appendChild(queryContent);
-            
-            // Create container for response
-            const responseContainer = document.createElement('div');
-            responseContainer.className = 'mb-4 p-3 rounded-lg bg-gray-200 shadow';
-            
-            const responseLabel = document.createElement('div');
-            responseLabel.className = 'font-bold text-green-600';
-            responseLabel.textContent = 'Response:';
-            
-            const responseContent = document.createElement('div');
-            responseContent.className = 'markdown-content text-gray-800';
-            responseContent.textContent = message.response;
-            
-            responseContainer.appendChild(responseLabel);
-            responseContainer.appendChild(responseContent);
-            
-            // Append the query and response containers to the chat messages div
-            chatMessagesDiv.appendChild(queryContainer);
-            chatMessagesDiv.appendChild(responseContainer);
-            });
+            // Extract the source from the current URL
+            const currentUrl = window.location.href;
+            const source = currentUrl.split('/').pop();
 
-            // Convert markdown content in the new messages to HTML
-            convertMarkdownContent();
-        } else {
-            console.log('No new messages returned from the backend.');
+            try {
+                // Make the POST request
+                const response = await fetch('/regenerate_summary', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ source })
+                });
+
+                console.log('response', response);
+
+                // Parse the response
+                const result = await response.json();
+
+                console.log('result', result);
+
+                // Check if the server provided a redirect URL
+                if (result.status === 'success' && result.redirect_url) {
+                    // Navigate to the redirect URL
+                    window.location.href = result.redirect_url;
+                } else {
+                    console.error('Failed to regenerate summary:', result);
+                }
+            } catch (error) {
+                console.error('Error during summary regeneration:', error);
+            } finally {
+                // Hide the spinner (if still on the same page)
+                spinnerOverlay.classList.add('hidden');
+                spinnerOverlay.classList.remove('flex');
+            }
         }
-        })
-        .catch(error => {
-        console.error('Error during model change:', error);
+
+        // model change action
+        const modelSelect = document.getElementById('model_selector');
+        const chatMessagesDiv = document.getElementById('chat-messages');
+
+        // Listen for changes on the dropdown
+        modelSelect.addEventListener('change', function () {
+            const selectedModel = modelSelect.value;
+
+            // Extract the source from the URL.
+            // Assuming URL format: http://0.0.0.0:5000/source/uniswap2 => source is "uniswap2"
+            const pathParts = window.location.pathname.split('/');
+            const source = pathParts[pathParts.length - 1];
+
+            // Prepare the payload with the new model and source
+            const payload = {
+                model: selectedModel,
+                source: source
+            };
+
+            // Send a POST request to the backend at '/model_change'
+            fetch('/model_change', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        console.log('response', response);
+                        throw new Error('Network response not OK');
+
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Check if the response contains new messages
+                    if (data.messages && data.messages.length > 0) {
+                        // Clear the current chat messages
+                        chatMessagesDiv.innerHTML = '';
+
+                        // Loop through each message and create new elements
+                        data.messages.forEach(message => {
+                            // Create container for user query
+                            const queryContainer = document.createElement('div');
+                            queryContainer.className = 'mb-4 p-3 rounded-lg bg-white shadow';
+
+                            const queryLabel = document.createElement('div');
+                            queryLabel.className = 'font-bold text-blue-600';
+                            queryLabel.textContent = 'You:';
+
+                            const queryContent = document.createElement('div');
+                            // Mark as markdown content so it gets converted later
+                            queryContent.className = 'text-gray-800';
+                            queryContent.textContent = message.query;
+
+                            queryContainer.appendChild(queryLabel);
+                            queryContainer.appendChild(queryContent);
+
+                            // Create container for response
+                            const responseContainer = document.createElement('div');
+                            responseContainer.className = 'mb-4 p-3 rounded-lg bg-gray-200 shadow';
+
+                            const responseLabel = document.createElement('div');
+                            responseLabel.className = 'font-bold text-green-600';
+                            responseLabel.textContent = 'Response:';
+
+                            const responseContent = document.createElement('div');
+                            responseContent.className = 'markdown-content text-gray-800';
+                            responseContent.textContent = message.response;
+
+                            responseContainer.appendChild(responseLabel);
+                            responseContainer.appendChild(responseContent);
+
+                            // Append the query and response containers to the chat messages div
+                            chatMessagesDiv.appendChild(queryContainer);
+                            chatMessagesDiv.appendChild(responseContainer);
+                        });
+
+                        // Convert markdown content in the new messages to HTML
+                        convertMarkdownContent();
+                    } else {
+                        console.log('No new messages returned from the backend.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error during model change:', error);
+                });
         });
-    });
-    // convertMarkdownContent();
-    function toggleModels(isChecked) {
-        const openaiModels=document.getElementById('openai-models');
-        
-        console.log('toggeling.');
-        if (isChecked) {
-            console.log('hiding');
-            openaiModels.classList.add("hidden");
-            // hideOpenAiModels();
-        } else {
-            console.log('showing');
-            openaiModels.classList.remove("hidden");
-            // showOpenAiModels();
+        // convertMarkdownContent();
+        function toggleModels(isChecked) {
+            const openaiModels = document.getElementById('openai-models');
+
+            console.log('toggeling.');
+            if (isChecked) {
+                console.log('hiding');
+                openaiModels.classList.add("hidden");
+                // hideOpenAiModels();
+            } else {
+                console.log('showing');
+                openaiModels.classList.remove("hidden");
+                // showOpenAiModels();
+            }
         }
-    }
-    
-    function hideOpenAiModels(){}
-        const openaiModels=document.getElementById('openai-models');
-        
-    function showOpenAiModels(){
-        
-    }
-    toggleModels(false);// initially show
-</script>
+
+        function hideOpenAiModels() { }
+        const openaiModels = document.getElementById('openai-models');
+
+        function showOpenAiModels() {
+
+        }
+        toggleModels(false);// initially show
+    </script>
 </body>
+
 </html>
