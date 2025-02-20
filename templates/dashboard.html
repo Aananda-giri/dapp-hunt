@@ -155,7 +155,7 @@
             <p class="text-gray-500">No downloads available yet.</p>
           {% endif %}
         </div>
-      </section>s
+      </section>
 
       <!-- Canvas Format Section -->
       <section id="canvas-format" class="content-section hidden">
@@ -194,7 +194,7 @@
             <p class="text-gray-600 mb-4">
                 Our AI-powered co-founder and investor bot asks relevant questions, challenges assumptions, and refines your startup idea in real-time.
             </p>
-            <a href="/canvas/your-project-name" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+            <a id="start_brainstroming" href="/canvas/your-project-name" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
                 Start Brainstorming
             </a>
         </div>
@@ -276,6 +276,19 @@
 
 
 <script>
+  // set random project-name to start brainstroming button.
+  function generateRandomString(digits) {
+    const characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'; // Include alphanumeric if needed
+    let result = '';
+    for (let i = 0; i < digits; i++) {
+      const randomIndex = Math.floor(Math.random() * characters.length);
+      result += characters.charAt(randomIndex);
+    }
+    return result;
+  } 
+  const randomProjectName = generateRandomString(8);
+  document.getElementById('start_brainstroming').href = `/canvas/${randomProjectName}`;
+  
   function showSection(sectionId) {
       // Hide all sections
       document.querySelectorAll('.content-section').forEach(section => {
