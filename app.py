@@ -51,6 +51,7 @@ qa_system = DocumentQA(
 
 async def crawl_text_content(url: str) -> str:
     """Async function to crawl text content from URL"""
+    print(f' crawling url: {url}')
     if is_youtube_url(url):
         return get_subtitle(url)
     
@@ -60,6 +61,7 @@ async def crawl_text_content(url: str) -> str:
             # Parse the HTML content with BeautifulSoup
             soup = BeautifulSoup(html_content, "html.parser")
             # Extract and return the text content
+            # print(f"crawled:: {soup.get_text(strip=True)[:100]}")
             return soup.get_text(strip=True)
 # async def crawl_text_content(url: str) -> str:
 #     """Async function to crawl text content from URL"""
@@ -104,7 +106,7 @@ def generate_pdf(source: str, qa_results: Dict[str, str]) -> str:
 #         ]))
 #     return {"sources": sources}
 
-@app.route("/")
+@app.route("/dashboard")
 @jinja.template("dashboard.html")
 async def dashboard(request):
     """Home page listing all sources"""
@@ -127,7 +129,7 @@ async def dashboard(request):
     
     return {"sources": sources, "questions":questions, "download_files":download_files}
 
-@app.route("/landing")
+@app.route("/")
 @jinja.template("landing.html")
 async def landing(request):
     """Home page listing all sources"""
@@ -262,7 +264,7 @@ async def add_source_new(request):
             "source": source,
             "summaries": summaries,
             "tagline":'',
-            "purpose":purpose,  # purpose is either "brainstorm" or "due_diligence"
+            "purpose":purpose,  # purpose is either "brainstrom" or "due_diligence"
             "created_at": datetime.now()
         }
         mongo.summary_collection.insert_one(summary_doc)
@@ -329,7 +331,7 @@ async def canvas(request, source):
             "source": source,
             "summaries": summaries,
             "tagline":'',
-            "purpose":'brainstorm',  # purpose is either "brainstorm" or "due_diligence"
+            "purpose":'brainstrom',  # purpose is either "brainstrom" or "due_diligence"
             "created_at": datetime.now()
         }
     
@@ -345,6 +347,8 @@ async def canvas(request, source):
     messages = []
     for message in chat_history:
         messages.extend(message['messages'])
+    
+    print(f'source:{source}message: {messages}')
     
     return {
         "source": source,
@@ -551,6 +555,7 @@ async def chat(request, source):
         # ------------------------
         brainstrom = True
     
+    print(f'mode: {model}, brainstrom:{brainstrom} purpose:{projectPurpose}')
     model_name = model.split('chat-')[-1].split('brainstrom-')[-1]   # one of these values : "o1", "r1", "llama3-70B"
     print(f'\n\n model_name: {model_name}')
         
@@ -575,8 +580,10 @@ async def chat(request, source):
     # print(f'response: {response}')
     
     if brainstrom:
+        print(f'saving brainstrom message')
         mongo.append_brainstrom_message(source, query, response)
     else:
+        print(f'saving chat messages')
         mongo.append_message(source, query, response)
     
     
@@ -915,19 +922,20 @@ async def add_data(request):
         if is_url(new_input):
             # new input is url
             print(f'new_input is url')
-            documents = []
             text_content = await crawl_text_content(new_input)
-            documents.append({
+            documents = [{
                 "source": source,
                 "url": new_input,
                 "text_content": text_content
-            })
+            }]
             
             # print(f"documents:{documents}")
             
             # Save documents
             qa_system.save_documents(documents)
 
+            print(f'saved to documents qa')
+            return sanic.response.json({"success": True})
         else:
             print(f'new_input is text')
             document = {
