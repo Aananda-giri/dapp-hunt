@@ -4,7 +4,7 @@ from typing import List, Dict, Optional
 from pymongo import MongoClient
 from mongo import Mongo
 
-from a16z.brainstorm_prompt import get_brainstorm_prompt
+from a16z.brainstorm_prompt import get_brainstorm_prompt, get_questions_list_prompt
 from atoma_sdk import AtomaSDK
 from dotenv import load_dotenv
 import os
@@ -44,15 +44,14 @@ class DocumentQA:
             "costs": "What operating costs are incurred by {source}?",
             "revenue": "How does {source} generate revenue?"
         }
-
-    def query_llm(self, query: str, max_tokens: int = 10000, model_name='gpt-4o', include_thinking_text=False) -> str:
+    def query_llm(self, query: str, max_tokens: int = 10000, model_name='gpt-4o', include_thinking_text=False, purpose=None) -> str:
         """
         Send a query to the LLM API and return the response
 
         * model name is one of these values: "o1", "r1", "llama3-70B"
         """
         with open('prompt.txt','a') as f:
-            f.write(query)
+            f.write(f'\n\nthe purpose: {str(purpose)}\n'+query)
 
         # print(f'query: {query}')
         # query using deepseek r1 model
@@ -239,7 +238,9 @@ class DocumentQA:
                 ).limit(n)
         return list(cursor)
 
-    def query_documents(self, query: str, source: str, n_docs: int = 100, bullet_points:bool = False, feed_message_history:bool=False, summary={}, brainstorm=False, model_name='gpt-4o', full_text_search=False, include_documents=True) -> str:
+
+
+    def query_documents(self, query: str, source: str, n_docs: int = 100, bullet_points:bool = False, feed_message_history:bool=False, summary={}, brainstorm=False, model_name='gpt-4o', full_text_search=False, include_documents=True, previous_questions=[], generate_questions=False, update_summaries=False, purpose=None) -> str:
         """# Added for brainstorming (False by default)
         Complete pipeline: search documents and query LLM with context
         """
@@ -257,6 +258,29 @@ class DocumentQA:
         elif bullet_points:
             # bullet points for lean canvas
             prompt = f"""please give very short response (not more than few sentences) You are a research-focused chatbot engaging in a conversation with a human. \n\n Your task is to provide professional and detailed answers to questions based strictly on the given context and messages history related to {source}.\n\n If the context or message history does not contain sufficient information to answer the question, clearly inform the user with very short message. Feel free to use the information user has provided in previous chat for answering new questions. Please answers in short bullet points which we can put in bullet points. Please respond with very short one sentence response if Question is actually suggestion or additional information. \n\nBelow is the context: \n\nContext: \n\n{context} \n\n"""
+        elif generate_questions:
+            prompt = get_questions_list_prompt(source, context, previous_questions) + f"\n\nBelow is the context: \n\nContext: \n\n{context} \n\n"
+        elif update_summaries:
+            prompt = '''
+## output
+* please generate a new summary in json format and please avoid generating any other text than updated json summary
+* Also, lets not assume things, please generate output based on given data (previous lean canvas) or conversations or given additional data.
+### example output1
+```
+{
+    "overall": "AI-powered test case generation platform for software QA and compliance testing automation.",
+    "target_users": "* Software development teams needing accelerated QA cycles\n* Enterprises with complex compliance requirements (e.g., finance, healthcare)\n* \n* DevOps teams using CI/CD pipelines\n* QA departments in mid-large tech companies",
+    "problems": "* Manual test case creation is time-consuming and error-prone\n* QA bottlenecks delaying software release cycles\n* High costs of compliance testing in regulated industries\n* Difficulty scaling QA processes for agile development",
+    "solutions": "Proprietary AI that analyzes code/requirements to auto-generate test cases\n* CI/CD pipeline integration for continuous testing\n* Adaptive compliance testing for software-behavior-based regulations\n* 10x faster test coverage than manual creation",
+    "unfair_advantage": "Founding team combines QA domain expertise + AI/ML technical depth\n* Proprietary test generation algorithms (patent-pending?)\n* First-mover advantage in AI-native compliance testing integration\n* Existing integrations with industry-standard CI/CD tools",
+    "unique_value_proposition": "Ship faster with AI-generated test suites that keep pace with development\n* Replace 80% of manual test design work with reliable automation\n* Compliance-as-code testing for regulated industries\n* Self-improving test coverage through ML feedback loops",
+    "channels": "Enterprise sales to DevOps/QA leadership\n* Partnerships with CI/CD platform providers\n* Developer community adoption through GitHub/GitLab integrations\n* Industry-specific compliance conferences (FINOS, HIMSS)",
+    "costs": "AI model training/maintenance infrastructure\n* Cloud compute costs for test generation engine\n* Enterprise sales team compensation\n* Compliance certification maintenance",
+    "revenue": "SaaS pricing based on test cases generated/month\n* Enterprise tier with custom compliance modules\n* Revenue share from CI/CD platform marketplace\n* Professional services for implementation/training"
+}
+```
+        ''' + f"\n\nBelow is the context: \n\nContext: \n\n{context} \n\n"
+
         else:
             # Prepare prompt with context and query
             prompt = f"""\n You are a research-focused chatbot engaging in a conversation with a human. \n\n Your task is to provide professional and detailed answers to questions based on the given context and messages history related to {source}.\n\n If the context or message history does not contain sufficient information to answer the question, clearly inform the user with very short message. Feel free to use the information user has provided in previous chat for answering new questions.\n\n Below is the context: Please respond with very short one sentence response if Question is actually suggestion or additional information. \n\nContext: \n\n{context} \n\n"""
@@ -264,10 +288,12 @@ class DocumentQA:
         if feed_message_history:
             
             formatted_messages = ''
-            if brainstorm:
-                mongo_messages = list(self.mongo.brainstorm_collection.find({'source': source}, {'messages': 1}))
-            else:
-                mongo_messages = list(self.mongo.messages_collection.find({'source': source}, {'messages': 1}))
+            '''Include all messages'''
+            # if brainstorm:
+            mongo_messages = list(self.mongo.brainstorm_collection.find({'source': source}, {'messages': 1}))
+            # else:
+            mongo_messages += list(self.mongo.messages_collection.find({'source': source}, {'messages': 1}))
+
             for messages in mongo_messages:
                 for message in messages['messages']:
                     formatted_messages += f'''user: {message['query']} \n assistant: {message['response']} \n\n'''
@@ -275,7 +301,7 @@ class DocumentQA:
 
             # print(f'feeding message history for source:\'{source}\': {formatted_messages[:100]}... mongo_msg:{mongo_messages}')
         if summary:
-            prompt += "\n\n ## summary:\n Here is the summary you have previously generated: \n\n" 
+            prompt += "\n\n ## Previous lean canvas:\n Here is the previous lean canvas you have previously generated: \n\n" 
             summary_str = ''
             for key, value in summary.items():
                 summary_str += f'\n### {key}: \n ' + value
@@ -283,8 +309,16 @@ class DocumentQA:
         # Add query to the prompt
         prompt += f"\n\n user: {query}"
         
-        # Get LLM response
-        return self.query_llm(prompt, model_name=model_name)
+        response=self.query_llm(prompt, model_name=model_name, purpose=purpose)
+        if generate_questions:
+            cleaned_questions = re.sub(r"^```json\n|\n```$", "", response.strip())
+
+            # Parse as JSON
+            questions_list = json.loads(cleaned_questions)
+            return questions_list
+        else:
+            # Get LLM response
+            return response
     
     def should_we_show_update_lean_canvas_checkbox(self, assistant_message):
         # update checkbox is checkbox right below message with which you can update the lean canvas.
@@ -309,60 +343,25 @@ class DocumentQA:
     '''
         decision_response = self.query_llm(prompt)
         return "yes" in decision_response.lower()
+    
     def regenerate_lean_canvas_v2(self, model_name, source):
-        messages = self.mongo.get_messages(source, model_name)
-
-        prompt = """can you please regenerate lean canvas based on below conversation history.
-        please return output in json format.
-
-        # Message history\n
-        """
-
-        formatted_messages = ''
-        for message in messages:
-            formatted_messages += f'''## user: {message['query']} \n## assistant: {message['response']} \n\n'''
-
-        formatted_messages += f'''## user: yes\n\n'''   # user responding yes to Assistants proposal of updaing the lean canvas.
-        prompt += formatted_messages
-
-
-
         ## Add lean canvas summary to prompt
         summary = self.mongo.summary_collection.find_one({"source": source})
         summary = summary["summaries"] if summary else {}
-        import json
-        prompt += f'''## Previous summary
-        ```
-        {json.dumps(summary)}
-        ```
-        '''
 
-        prompt += '''
-## output
-* please generate a new summary in json format and please generating any other text than updated json summary
-* Also, lets not assume things, please generate output based on given data (previous lean canvas) or conversations.
-### example output1
-```
-{
-    "overall": "AI-powered test case generation platform for software QA and compliance testing automation.",
-    "target_users": "* Software development teams needing accelerated QA cycles\n* Enterprises with complex compliance requirements (e.g., finance, healthcare)\n* \n* DevOps teams using CI/CD pipelines\n* QA departments in mid-large tech companies",
-    "problems": "* Manual test case creation is time-consuming and error-prone\n* QA bottlenecks delaying software release cycles\n* High costs of compliance testing in regulated industries\n* Difficulty scaling QA processes for agile development",
-    "solutions": "Proprietary AI that analyzes code/requirements to auto-generate test cases\n* CI/CD pipeline integration for continuous testing\n* Adaptive compliance testing for software-behavior-based regulations\n* 10x faster test coverage than manual creation",
-    "unfair_advantage": "Founding team combines QA domain expertise + AI/ML technical depth\n* Proprietary test generation algorithms (patent-pending?)\n* First-mover advantage in AI-native compliance testing integration\n* Existing integrations with industry-standard CI/CD tools",
-    "unique_value_proposition": "Ship faster with AI-generated test suites that keep pace with development\n* Replace 80% of manual test design work with reliable automation\n* Compliance-as-code testing for regulated industries\n* Self-improving test coverage through ML feedback loops",
-    "channels": "Enterprise sales to DevOps/QA leadership\n* Partnerships with CI/CD platform providers\n* Developer community adoption through GitHub/GitLab integrations\n* Industry-specific compliance conferences (FINOS, HIMSS)",
-    "costs": "AI model training/maintenance infrastructure\n* Cloud compute costs for test generation engine\n* Enterprise sales team compensation\n* Compliance certification maintenance",
-    "revenue": "SaaS pricing based on test cases generated/month\n* Enterprise tier with custom compliance modules\n* Revenue share from CI/CD platform marketplace\n* Professional services for implementation/training"
-}
-```
+        print(f'previous_summary: {summary}')
+        
+        query = ' '.join([f'{key} ' for key, value in summary.items() ])
 
-        '''
-        response = self.query_llm(prompt, model_name=model_name)
+        response = self.query_documents(query=query, source=source, feed_message_history=True, summary=summary, brainstorm=False, model_name='gpt-4o', full_text_search=False, include_documents=True, previous_questions=[], generate_questions=False, update_summaries=True, purpose="the_summary_gen")
+        
         # Remove code block markers
         cleaned_text = re.sub(r"^```json\n|\n```$", "", response.strip())
 
+        print(f'\n\n cleaned_text: {cleaned_text}')
         # Parse as JSON
         summary_json_data = json.loads(cleaned_text)
+        print(f'\n\n summary_data:{summary_json_data}')
         
         # update summmary in mongo
         self.mongo.update_summary(source, summary_json_data)

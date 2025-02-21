@@ -95,6 +95,21 @@ def generate_pdf(source: str, qa_results: Dict[str, str]) -> str:
     pdf.output(filename)
     return filename
 
+def get_questions(source):
+    questions = {}
+    for key, value in qa_system.questions.items():
+        questions[key] = value.format(source=source)
+    
+    
+    '''
+    # need to create questions for individual project or for individual user
+    questions = mongo.questions_collection.find_one({"source":source})
+    if not questions:
+        
+        mongo.questions_collection.insert_one({"source":source})
+    '''
+    return questions
+
 # @app.route("/")
 # @jinja.template("home.html")
 # async def home(request):
@@ -119,9 +134,7 @@ async def dashboard(request):
 
     # Get questions
     source = "`your_product`"
-    questions = {}
-    for key, value in qa_system.questions.items():
-        questions[key] = value.format(source=source)
+    questions = get_questions(source)
     
     print(f'questions: {questions}')
 
@@ -143,6 +156,10 @@ async def landing(request):
 @app.route("/add_source", methods=["GET", "POST"])
 @jinja.template("add_source.html")
 async def add_source(request):
+    '''
+    * Previous version: User used to give list of sources
+    '''
+
     if request.method == "GET":
         continue_without_source = request.args.get("continue_without_source", "false")  # Default to "no" if not provided
         display_source_form = continue_without_source.lower() == 'false' # display source if not continue_without_source
@@ -179,9 +196,7 @@ async def add_source(request):
         # Save documents
         qa_system.save_documents(documents)
         
-        questions = {}
-        for key, value in qa_system.questions.items():
-            questions[key] = value.format(source=source)
+        questions = get_questions(source)
 
         # print(questions)
 
@@ -210,9 +225,7 @@ async def add_source(request):
         pdf_path = generate_pdf(source, summaries)
     else:
         # continue without sourc
-        questions = {}
-        for key, value in qa_system.questions.items():
-            questions[key] = value.format(source=source)
+        questions = get_questions(source)
         # print(questions)
 
         # Dummy summary data
@@ -246,10 +259,8 @@ async def add_source_new(request):
     purpose = data.get("projectPurpose")
     print(f'\n\n source: {source}, purpose:{purpose}')
     try:
-        questions = {}
         summaries = {}
-        for key, value in qa_system.questions.items():
-            questions[key] = value.format(source=source)
+        questions = get_questions(source)
         # print(questions)
 
         # Dummy summary data
@@ -313,10 +324,8 @@ async def canvas(request, source):
 
     summary = mongo.summary_collection.find_one({'source':source})
     if not summary or source=="your-project-name":
-        questions = {}
         summaries = {}
-        for key, value in qa_system.questions.items():
-            questions[key] = value.format(source=source)
+        questions = get_questions(source)
         # print(questions)
 
         # Dummy summary data
@@ -334,6 +343,7 @@ async def canvas(request, source):
             "purpose":'brainstorm',  # purpose is either "brainstorm" or "due_diligence"
             "created_at": datetime.now()
         }
+        # Create new questions here.
     
     if summary and 'purpose' in summary.keys():
         purpose = summary['purpose']
@@ -348,6 +358,13 @@ async def canvas(request, source):
     for message in chat_history:
         messages.extend(message['messages'])
     
+    # Get questions
+    questions = mongo.questions_collection.find_one({'source':source})
+    if questions:
+        questions = questions['questions']
+    else:
+        questions = []
+
     print(f'source:{source}message: {messages}')
     
     return {
@@ -356,7 +373,8 @@ async def canvas(request, source):
         "chat_history": messages,
         "pdf_path": f"/download/{source}/summary.pdf",
         "data_sources": data_sources,
-        "purpose": purpose
+        "purpose": purpose,
+        "questions": questions
     }
 
 @app.route("/regenerate_summary", methods=["GET", "POST"])
@@ -370,9 +388,7 @@ async def regenerate_summary(request):
 
     print(f'regenerating summary. source:{source}')
 
-    questions = {}
-    for key, value in qa_system.questions.items():
-        questions[key] = value.format(source=source)
+    questions = get_questions(source)
 
     # print(questions)
 
@@ -568,7 +584,7 @@ async def chat(request, source):
         n_docs=100,
         feed_message_history=True,
         summary=summary,
-        brainstorm=brainstorm,            # Added for brainstorming (True or False)
+        brainstorm=True,            #brainstorm Added for brainstorming (True or False)
         model_name = model_name,    # one of these values : "o1", "r1", "llama3-70B"
         full_text_search=True
         # use_r1=use_r1               # whether or not use r1 model
@@ -576,6 +592,38 @@ async def chat(request, source):
         
     # update lean canvas checkbox
     show_update_checkbox = qa_system.should_we_show_update_lean_canvas_checkbox(response)
+    
+    # update questions about the product
+    previous_questions = mongo.questions_collection.find_one({'source':source})
+    questions_list = qa_system.query_documents(
+        query=query,
+        source=source,
+        n_docs=100,
+        feed_message_history=True,
+        summary=summary,
+        brainstorm=False,            # Added for brainstorming (True or False)
+        model_name = model_name,    # one of these values : "o1", "r1", "llama3-70B"
+        full_text_search=True,
+        previous_questions=previous_questions,
+        generate_questions=True
+    )
+
+    # Update if the document with the given source exists, otherwise insert a new one
+    mongo.questions_collection.update_one(
+        {"source": source},  # Search condition
+        {"$set": {"questions": questions_list}},  # Update operation
+        upsert=True  # Insert if not found
+    )
+    
+    with open('questions.txt','w') as f:
+        f.write(str(questions_list))
+        
+
+    # update mongo with new questions
+
+    
+    # show_update_checkbox = qa_system.update_questions(response)
+
     print('show_update_checkbox: {show_update_checkbox}')
     # print(f'response: {response}')
     
@@ -588,7 +636,7 @@ async def chat(request, source):
     
     
     print(f' query: {query}\n response: {response}')
-    return sanic.response.json({"response": response, "show_update_checkbox": show_update_checkbox})
+    return sanic.response.json({"response": response, "show_update_checkbox": show_update_checkbox, "questions":questions_list})
 
 @app.route("/model_change", methods=["GET", "POST"])
 async def model_change(request):
@@ -912,6 +960,9 @@ def is_url(text):
 # add new url or data to existing knowledge base
 @app.post("/add-data")
 async def add_data(request):
+    '''
+    * new version: user gives one source link at a time (from lean canvas page)
+    '''
     data = request.json
     source = urllib.parse.unquote(data.get("source", None))
     new_input = urllib.parse.unquote(data.get("new_input", None))
@@ -945,6 +996,11 @@ async def add_data(request):
                     'chunk_index': mongo.collection.count_documents({"source":source, "url": "mannual_input"})  # count of Existing documents with source, url': "mannual_input"
                 }
             mongo.collection.insert_one(document)
+
+            # Re-generate lean canvas
+            model_name = "gpt-4o"    # atoma models are not working right now.
+            qa_system.regenerate_lean_canvas_v2(model_name, source)
+
         return sanic.response.json({"success": True})
     except Exception as ex:
         print(f' error adding new data: {ex}')

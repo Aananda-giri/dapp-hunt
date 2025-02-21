@@ -37,6 +37,7 @@ class Mongo():
         # self.collection.create_index('url', unique=True)
         self.collection.create_index('source')
 
+
         # to perform full text search, we must create a text index on a collection.
         self.collection.create_index([("text_content", "text")])
 
@@ -45,11 +46,17 @@ class Mongo():
         self.messages_collection = self.db.messages
         self.messages_collection.create_index('source', unique=True)
 
+        # brainstorm messages collection
         self.brainstorm_collection = self.db.brainstorm
         self.brainstorm_collection.create_index('source', unique=True)
 
+        # Summary collection (store lean canvas data)
         self.summary_collection = self.db.summaries
         self.summary_collection.create_index('source', unique=True)
+
+        # Questions collection
+        self.questions_collection = self.db.questions
+        self.questions_collection.create_index('source')
     
     def ping(self):
         # Send a ping to confirm a successful connection
@@ -139,31 +146,57 @@ class Mongo():
         # list(messages_collection.find({}))
     def exists(self, source):
         return self.collection.find_one({'source':source})
-    
-    def update_summary(self, source:str, title:str, new_text:str):
-        try:
-            full_document = self.summary_collection.find_one({'source' : source})
 
-            all_summaries = full_document['summaries']
+    def update_summary(self, source, summaries):
+        """
+        Updates the 'summaries' field for an existing document with the given source.
+        If not found, inserts a new document.
 
-            # update summary of specific topic
-            all_summaries[title.lower()] = new_text
+        Parameters:
+            mongo: MongoDB client object
+            source (str): The unique source identifier
+            summaries (list): List of summaries to update or insert
+        """
+        collection = self.summary_collection  # Access the summary collection
 
-            # update if exists, create new otherwise
-            query = {"source": source}
-
-            # Define the update operation
-            update = {
+        # Upsert operation: update summaries if source exists, otherwise insert new
+        collection.update_one(
+            {"source": source},  # Search condition
+            {
                 "$set": {
-                    "summaries": all_summaries,
+                    "summaries": summaries,
                     "created_at": datetime.now()
                 }
-            }
+            },
+            upsert=True  # Insert if not found
+        )
 
-            # Use update_one with upsert=True
-            self.summary_collection.update_one(query, update, upsert=True)
-        except Exception as e:
-            print(f' failed to update summary for {source} with title: {title} and new_text: {new_text[:50]}...\n error:{e}')
+        print(f"Summary for '{source}' updated or created successfully.")
+
+    # def update_summary(self, source:str, title:str, new_text:str):
+    #     try:
+    #         full_document = self.summary_collection.find_one({'source' : source})
+
+    #         all_summaries = full_document['summaries']
+
+    #         # update summary of specific topic
+    #         all_summaries[title.lower()] = new_text
+
+    #         # update if exists, create new otherwise
+    #         query = {"source": source}
+
+    #         # Define the update operation
+    #         update = {
+    #             "$set": {
+    #                 "summaries": all_summaries,
+    #                 "created_at": datetime.now()
+    #             }
+    #         }
+
+    #         # Use update_one with upsert=True
+    #         self.summary_collection.update_one(query, update, upsert=True)
+    #     except Exception as e:
+    #         print(f' failed to update summary for {source} with title: {title} and new_text: {new_text[:50]}...\n error:{e}')
     
     def get_messages(self, source, model_name, exclude_timestamp=True):
         """

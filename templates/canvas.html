@@ -163,10 +163,10 @@
 
         <!-- Sidebar (Contains Everything) -->
         <aside class="w-full md:w-1/3 bg-white p-6 mb-20 rounded-lg shadow-md">
-            <h2 class="text-xl font-bold mb-4 text-gray-800">Project Info</h2>
+            <h2 class="hidden text-xl font-bold mb-4 text-gray-800">Project Info</h2>
 
             <!-- Add New Source Section -->
-            <form id="updateForm">
+            <form id="updateForm" class="hidden">
                 <label class="block text-gray-700 mb-2">Product/Company Name</label>
                 <input id="sourceInput" type="text" required class="w-full p-2 border rounded mb-4"
                     placeholder="{{ source | capitalize }}">
@@ -179,11 +179,9 @@
                     <option value="due_diligence">Due Diligence for Investors</option>
                     <option value="brainstorm">Brainstorm for founders</option>
                     {% else %}
-                    fucking else
                     <option value="brainstorm">Brainstorm for founders</option>
                     <option value="due_diligence">Due Diligence for Investors</option>
                     {% endif %}
-                    fucking eee
                 </select>
 
                 <button onclick="updateName()" id="updateNamesubmitButton"
@@ -211,7 +209,8 @@
             <!-- Existing Sources List -->
             <h2 class="text-xl font-bold mt-6 mb-4 text-gray-800">Existing Sources</h2>
 
-            <div class="space-y-4 max-h-80 ">
+            
+            <div id="questions" class="space-y-4 max-h-80 ">
                 <!-- Dummy Source 1 -->
                 {% for data_source in data_sources %}
                 <div class="flex items-center gap-2">
@@ -290,25 +289,28 @@
             <!-- Unanswered questions List -->
             <div class="flex justify-between items-center mt-12 mb-4">
                 <h2 class="text-xl font-bold text-gray-800">Insufficient Context for</h2>
-                <button class="text-blue-600 font-semibold hover:underline">Copy All</button>
+                <button id="copy_questions" class="text-blue-600 font-semibold hover:underline">Copy All</button>
             </div>
 
             <!-- Question 1 -->
+            {% for question in questions %}
             <div class="space-y-4 max-h-80 ">
                 <div class="flex items-center gap-2">
-                    <span class="font-semibold text-lg">1</span>
+                    <span class="font-semibold text-lg">{{loop.index}}</span>
                     <div
                         class="bg-gray-100 p-2 rounded-lg shadow-md flex justify-between items-center border border-gray-300 w-full">
 
-                        <div class="text-blue-600 text-md font-semibold  w-full truncate" >
-                            How does better therapy reward doctors?
+                        <div class="question text-blue-600 text-md font-semibold  w-full truncate" >
+                            {{question}}
                         </div>
                     </div>
                 </div>
+            </div>
+            {% endfor %}
 
             <!-- Question 2 -->
 
-            <div class="space-y-4 max-h-80 ">
+            <!-- <div class="space-y-4 max-h-80 ">
                 <div class="flex items-center gap-2">
                     <span class="font-semibold text-lg">2</span>
                     <div
@@ -319,9 +321,8 @@
                         </div>
                     </div>
                 </div>
+            </div> -->
 
-     
-            </div>
         </aside>
 
 
@@ -454,6 +455,24 @@
     </script>
     <!-- JavaScript -->
     <script>
+        document.getElementById("copy_questions").addEventListener("click", function () {
+            // Get all elements with class "question"
+            const questionElements = document.querySelectorAll(".question");
+
+            // Extract text content and format as a list
+            const questionsList = Array.from(questionElements)
+                .map(el => el.textContent.trim()) // Get text and remove extra spaces
+                .filter(text => text.length > 0) // Ignore empty texts
+                .join("\n"); // Join questions with new lines
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(questionsList).then(() => {
+                alert("Questions copied to clipboard!");
+            }).catch(err => {
+                console.error("Failed to copy: ", err);
+            });
+        });
+
 
         function checkAndReloadIfQuestionMark() {
             /*
@@ -845,6 +864,29 @@
                 alert('Something went wrong. Please try again.');
             }
         }
+        
+        function updateQuestions(result) {
+            const questionsContainer = document.getElementById("questions");
+            
+            // Clear existing questions
+            questionsContainer.innerHTML = "";
+
+            result.questions.forEach((question, index) => {
+                const questionElement = document.createElement("div");
+                questionElement.className = "flex items-center gap-2";
+
+                questionElement.innerHTML = `
+                    <span class="font-semibold text-lg">${index + 1}</span>
+                    <div class="bg-gray-100 p-2 rounded-lg shadow-md flex justify-between items-center border border-gray-300 w-full">
+                        <div class="text-blue-600 text-md font-semibold w-full truncate">
+                            ${question}
+                        </div>
+                    </div>
+                `;
+
+                questionsContainer.appendChild(questionElement);
+            });
+        }
         document.getElementById('chatForm').onsubmit = async (e) => {
             e.preventDefault();
 
@@ -947,6 +989,11 @@
                     </div>
                 </div>`;
                 }
+
+                // update questions
+                updateQuestions(result.questions)
+
+
                 // assistant names: Investor, cofounder
                 updateAssistantName();
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
