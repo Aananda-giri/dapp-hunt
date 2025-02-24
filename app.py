@@ -95,7 +95,7 @@ def generate_pdf(source: str, qa_results: Dict[str, str]) -> str:
     pdf.output(filename)
     return filename
 
-def get_questions(source):
+def get_lean_canvas_questions(source):
     questions = {}
     for key, value in qa_system.questions.items():
         questions[key] = value.format(source=source)
@@ -134,7 +134,7 @@ async def dashboard(request):
 
     # Get questions
     source = "`your_product`"
-    questions = get_questions(source)
+    questions = get_lean_canvas_questions(source='`your_product`')
     
     print(f'questions: {questions}')
 
@@ -325,7 +325,7 @@ async def canvas(request, source):
     summary = mongo.summary_collection.find_one({'source':source})
     if not summary or source=="your-project-name":
         summaries = {}
-        questions = get_questions(source)
+        questions = get_lean_canvas_questions(source)
         # print(questions)
 
         # Dummy summary data
@@ -359,11 +359,7 @@ async def canvas(request, source):
         messages.extend(message['messages'])
     
     # Get questions
-    questions = mongo.questions_collection.find_one({'source':source})
-    if questions:
-        questions = questions['questions']
-    else:
-        questions = []
+    questions = list(mongo.questions_collection.find({"source":source}, {'question':1}))
 
     print(f'source:{source}message: {messages}')
     
@@ -577,7 +573,9 @@ async def chat(request, source):
         
     summary = mongo.summary_collection.find_one({"source": source})
     summary = summary["summaries"] if summary else {}
-
+    
+    # Chat Response
+    # --------------
     response = qa_system.query_documents(
         query=query,
         source=source,
@@ -591,9 +589,11 @@ async def chat(request, source):
     )
         
     # update lean canvas checkbox
+    # ----------------------------
     show_update_checkbox = qa_system.should_we_show_update_lean_canvas_checkbox(response)
     
     # update questions about the product
+    # -----------------------------------
     previous_questions = mongo.questions_collection.find_one({'source':source})
     questions_list = qa_system.query_documents(
         query=query,
@@ -609,11 +609,13 @@ async def chat(request, source):
     )
 
     # Update if the document with the given source exists, otherwise insert a new one
-    mongo.questions_collection.update_one(
-        {"source": source},  # Search condition
-        {"$set": {"questions": questions_list}},  # Update operation
-        upsert=True  # Insert if not found
-    )
+    # mongo.questions_collection.update_one(
+    #     {"source": source},  # Search condition
+    #     {"$set": {"questions": questions_list}},  # Update operation
+    #     upsert=True  # Insert if not found
+    # )
+    for question in questions_list:
+        mongo.create_question(source=source, question=question, answer='')
     
     with open('questions.txt','w') as f:
         f.write(str(questions_list))
@@ -635,7 +637,8 @@ async def chat(request, source):
         mongo.append_message(source, query, response)
     
     
-    print(f' query: {query}\n response: {response}')
+    # print(f' query: {query}\n response: {response}')
+    # print(f'full response: "response": {response}, "show_update_checkbox": {show_update_checkbox}, "questions":{questions_list}')
     return sanic.response.json({"response": response, "show_update_checkbox": show_update_checkbox, "questions":questions_list})
 
 @app.route("/model_change", methods=["GET", "POST"])
@@ -1043,6 +1046,111 @@ async def update_source_new(request):
             return sanic.response.json({"success": False, "error": "No matching document found"})
     else:
         return sanic.response.json({"success": False, "error": "Name can't be empty"})
+
+
+# Questions
+# -----------
+
+@app.route("/questions/<source>", methods=["GET"])
+@jinja.template("questions.html")
+async def get_questions(request, source):
+    '''
+    * Get all chunks for given source
+    * return chunks
+    '''
+    source = urllib.parse.unquote(source)
+    print(f'data-preview. source: {source}')
+    try:
+        # Aggregate to group chunks by URL
+        pipeline = [
+            {"$match": {}},
+        ]
+
+        cursor = mongo.questions_collection.aggregate(pipeline)
+        # results = await cursor.to_list(length=None)
+        questions = list(cursor.to_list(length=None))
+        
+        return {"success": True, "questions": questions, "source": source}
+    except Exception as e:
+        print(e)
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/update-qa")
+async def update_qa(request):
+    '''
+    * new version: user gives one source link at a time (from lean canvas page)
+    '''
+    data = request.json
+    source = urllib.parse.unquote(data.get("source", None))
+    question_id = urllib.parse.unquote(data.get("question_id", None))
+    answer = urllib.parse.unquote(data.get("answer", None))
+    
+    print(f"source:{source}\n\n, question_id:\"{question_id}\" answer: {answer}")
+    
+    try:
+        mongo.update_question(question_id=question_id, updated_data={"answer": answer})
+        
+        return sanic.response.json({"success": True})
+    except Exception as ex:
+        print(f' error adding new data: {ex}')
+        return sanic.response.json({"success": False, "error": "No matching document found"})
+
+
+@app.post("/add-qa")
+async def add_qa(request):
+    '''
+    Add a new question and answer pair
+    '''
+    data = request.json
+    source = urllib.parse.unquote(data.get("source", None))
+    question = urllib.parse.unquote(data.get("question", None))
+    answer = urllib.parse.unquote(data.get("answer", None))
+    
+    print(f"Adding new Q&A - source: {source}, question: {question}, answer: {answer}")
+    
+    if not all([source, question, answer]):
+        print("Missing required fields (source, question, or answer)")
+        # return sanic.response.json({
+        #     "success": False, 
+        #     "error": "Missing required fields (source, question, or answer)"
+        # })
+    
+    try:
+        mongo.create_question(source=source, question=question, answer=answer)
+        return sanic.response.json({"success": True})
+    except Exception as ex:
+        print(f'Error adding new Q&A: {ex}')
+        return sanic.response.json({
+            "success": False, 
+            "error": str(ex)
+        })
+
+@app.delete("/delete-qa")
+async def delete_qa(request):
+    '''
+    Delete a question and its associated answer
+    '''
+    data = request.json
+    question_id = urllib.parse.unquote(data.get("question_id", None))
+    
+    print(f"Deleting Q&A with question_id: {question_id}")
+    
+    if not question_id:
+        return sanic.response.json({
+            "success": False, 
+            "error": "Missing question_id"
+        })
+    
+    try:
+        mongo.delete_question(question_id=question_id)
+        return sanic.response.json({"success": True})
+    except Exception as ex:
+        print(f'Error deleting Q&A: {ex}')
+        return sanic.response.json({
+            "success": False, 
+            "error": str(ex)
+        })
 
 
 

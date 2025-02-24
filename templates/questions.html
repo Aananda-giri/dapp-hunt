@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q&A Viewer - {{ source }}</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --danger-color: #dc2626;
+            --success-color: #059669;
+            --border-color: #e5e7eb;
+            --background-light: #f9fafb;
+            --text-primary: #1f2937;
+            --text-secondary: #4b5563;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+            background-color: var(--background-light);
+            color: var(--text-primary);
+        }
+    
+        h1 {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+    
+        .url-section {
+            background: white;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+    
+        .url-header {
+            background-color: var(--background-light);
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    
+        .chunk-container {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+    
+        textarea.chunk {
+            width: 100%;
+            min-height: 120px;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-family: 'Menlo', 'Monaco', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            resize: vertical;
+            margin-bottom: 1rem;
+            background-color: var(--background-light);
+        }
+    
+        textarea.chunk:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+    
+        .button-group {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+    
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+        }
+    
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+    
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+    
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+    
+        .btn-danger:hover {
+            background-color: #b91c1c;
+        }
+    
+        .section-actions {
+            padding: 1rem 1.5rem;
+            background-color: var(--background-light);
+            display: flex;
+            justify-content: flex-end;
+        }
+    
+        .error {
+            color: var(--danger-color);
+            padding: 1rem;
+            background-color: #fee2e2;
+            border-radius: 6px;
+            margin-top: 1rem;
+        }
+    
+        .success {
+            color: var(--success-color);
+            padding: 1rem;
+            background-color: #dcfce7;
+            border-radius: 6px;
+            margin-top: 1rem;
+        }
+    
+        .url-header {
+            background-color: var(--background-light);
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+    
+        .url-header-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+    
+        .toggle-icon {
+            width: 24px;
+            height: 24px;
+            transition: transform 0.3s ease;
+        }
+    
+        .url-section.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+    
+        .chunks-wrapper {
+            transition: height 0.3s ease-in-out;
+            overflow: hidden;
+        }
+    
+        .url-section.collapsed .chunks-wrapper {
+            height: 0 !important;
+        }
+    
+        .url-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+    
+        .chunk-count {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+    
+    
+        #new_source_input {
+            padding: 12px 15px; /* Increased padding for larger input */
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 16px; /* Increased font size */
+            width: 300px; /* Fixed width for a more professional look */
+            box-shadow: inset 0 1px 3px rgba(0,0,0,.1); /* Subtle shadow for depth */
+        }
+    
+        #new_source_input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25); /* Blue outline on focus */
+        }
+                
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #f8f9fa; /* Light background for a professional look */
+            border-bottom: 2px solid #ddd; /* Subtle border */
+        }
+    
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+    
+        button {
+            padding: 8px 16px;
+            background-color: #28a745; /* Green button */
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+    
+        button:hover {
+            background-color: #218838;
+        }
+      /* Modified styles for Q&A form */
+      .qa-form {
+            display: flex;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .qa-form input, .qa-form textarea {
+            padding: 12px 15px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .qa-form input {
+            flex: 1;
+        }
+
+        .qa-form textarea {
+            flex: 2;
+            resize: vertical;
+            min-height: 50px;
+        }
+      </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <h1>Q&A Viewer - <span id="sourceTitle">{{ source }}</span></h1>
+            <button onclick="window.location.href='/canvas/{{source}}';">Go Back</button>
+        </div>
+
+        <!-- New Question-Answer Form -->
+        <div class="qa-form">
+            <input type="text" id="new_question_input" placeholder="Enter your question here">
+            <textarea id="new_answer_input" placeholder="Enter the answer here"></textarea>
+            <button class="btn btn-primary" onclick="addQuestionAnswer()">Add Q&A</button>
+        </div>
+
+        <div id="content">
+            {% if success %}
+            {% for question in questions %}
+            
+            <div class="url-section collapsed" id="qa-section-{{loop.index}}">
+                <div class="url-header" onclick="toggleSection({{loop.index}})">
+                    <div class="url-header-content">
+                        <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <div class="url-info">
+                            <div class="question-status-wrapper">
+                                <span>Question: {{ question.question }}</span>
+                                {% if question.answer and question.answer|length > 0 %}
+                                    <svg class="status-icon status-answered" viewBox="0 0 24 24" width="20" height="20">
+                                        <circle cx="12" cy="12" r="10" fill="#059669"/>
+                                        <path d="M8 12l3 3 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                {% else %}
+                                    <svg class="status-icon status-unanswered" viewBox="0 0 24 24" width="20" height="20">
+                                        <circle cx="12" cy="12" r="10" fill="#dc2626"/>
+                                        <path d="M12 8v4m0 4h.01" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-danger" onclick='deleteQuestion(`{{ question._id }}`, {{ loop.index }}); event.stopPropagation();'>
+                        Delete Question
+                    </button>
+                </div>
+                
+                <style>
+                .question-status-wrapper {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                
+                .status-icon {
+                    flex-shrink: 0;
+                }
+                
+                .status-answered {
+                    animation: fadeIn 0.3s ease-in-out;
+                }
+                
+                .status-unanswered {
+                    animation: pulseRed 2s infinite;
+                }
+                
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                
+                @keyframes pulseRed {
+                    0% { opacity: 1; }
+                    50% { opacity: 0.6; }
+                    100% { opacity: 1; }
+                }
+                </style>
+                <div class="chunks-wrapper" id="chunks-wrapper-{{loop.index}}">
+                    <div class="chunk-container">
+                        <textarea 
+                            id="qa-{{loop.index}}-answer"
+                            class="chunk source-{{ loop.index }}"
+                        >{{ question.answer }}</textarea>
+                        <div class="button-group">
+                            <button class="btn btn-primary" onclick='updateAnswer(`{{ question._id }}`, {{ loop.index }})'>
+                                Update Answer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+                <div class="error">Error loading data.</div>
+            {% endif %}
+
+        </div>
+        <div id="message"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
+    <script>
+        // Keep the existing toggleSection function
+        function toggleSection(index) {
+            const section = document.getElementById(`qa-section-${index}`);
+            const wrapper = document.getElementById(`chunks-wrapper-${index}`);
+            
+            if (section.classList.contains('collapsed')) {
+                section.classList.remove('collapsed');
+                const height = Array.from(wrapper.children)
+                    .reduce((total, child) => total + child.offsetHeight, 0);
+                wrapper.style.height = height + 'px';
+            } else {
+                section.classList.add('collapsed');
+                wrapper.style.height = wrapper.offsetHeight + 'px';
+                wrapper.offsetHeight;
+                wrapper.style.height = '0';
+            }
+        }
+
+        function addQuestionAnswer() {
+            const source = window.location.pathname.split("/").pop();
+            const question = document.getElementById('new_question_input').value;
+            const answer = document.getElementById('new_answer_input').value;
+
+            // if (!question || !answer) {
+            //     alert("Please enter both question and answer");
+            //     return;
+            // }
+
+            let data = {
+                source: source,
+                question: question,
+                answer: answer
+            };
+
+            fetch('/add-qa', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    location.reload();
+                } else {
+                    alert("Failed to add Q&A: " + result.error);
+                }
+            })
+            .catch(error => {
+                alert("Request failed: " + error);
+            });
+        }
+
+        function updateAnswer(question_id, index) {
+            const source = window.location.pathname.split("/").pop();
+            const answer = document.getElementById(`qa-${index}-answer`).value;
+
+            let data = {
+                source: source,
+                question_id: question_id,
+                answer: answer
+            };
+
+            fetch('/update-qa', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showMessage("Answer updated successfully", "success");
+                } else {
+                    showMessage("Update failed: " + result.error, "error");
+                }
+            })
+            .catch(error => {
+                showMessage("Request failed: " + error, "error");
+            });
+        }
+
+        function deleteQuestion(question_id, index) {
+            if (!confirm(`Are you sure you want to delete this Q&A?`)) {
+                return;
+            }
+
+            const source = window.location.pathname.split("/").pop();
+            let data = {
+                // source: source,
+                question_id: question_id
+            };
+
+            fetch('/delete-qa', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    let qaSection = document.getElementById(`qa-section-${index}`);
+                    if (qaSection) {
+                        qaSection.remove();
+                    }
+                    showMessage("Q&A deleted successfully", "success");
+                } else {
+                    showMessage("Delete failed: " + result.error, "error");
+                }
+            })
+            .catch(error => {
+                showMessage("Request failed: " + error, "error");
+            });
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = type;
+            messageDiv.textContent = message;
+            
+            setTimeout(() => {
+                messageDiv.textContent = '';
+                messageDiv.className = '';
+            }, 3000);
+        }
+
+        // Add transition end listener
+        document.addEventListener('DOMContentLoaded', () => {
+            const wrappers = document.querySelectorAll('.chunks-wrapper');
+            wrappers.forEach(wrapper => {
+                wrapper.addEventListener('transitionend', () => {
+                    if (!wrapper.parentElement.classList.contains('collapsed')) {
+                        wrapper.style.height = 'auto';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

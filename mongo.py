@@ -22,6 +22,9 @@ from pymongo import MongoClient
 
 from pymongo.mongo_client import MongoClient
 
+from bson import ObjectId
+
+
 class Mongo():
     def __init__(self, db_name='dapp-hunt', collection_name="web_pages", local=False):
         self.uri=os.environ.get('mongo_uri')
@@ -242,6 +245,24 @@ class Mongo():
                 message['timestamp'] = str(message['timestamp'])
                 messages_new.append(message)
         return messages_new
+    
+    # Create a question
+    def create_question(self, source: str, question: str, answer: str):
+        question_data = {"source": source, "question": question, "answer": answer}
+        result = self.questions_collection.insert_one(question_data)
+        return str(result.inserted_id)
+
+    # Delete a question by ID
+    def delete_question(self, question_id: str):
+        result = self.questions_collection.delete_one({"_id": ObjectId(question_id)})
+        return result.deleted_count > 0
+
+    # Update a question by ID
+    def update_question(self, question_id: str, updated_data: dict):
+        update_fields = {key: value for key, value in updated_data.items() if key in ["source", "question", "answer"]}
+        result = self.questions_collection.update_one({"_id": ObjectId(question_id)}, {"$set": update_fields})
+        return result.modified_count > 0
+
     # def update_summary(self, source, summaries):
     #     created_at= datetime.now()
         
