@@ -637,7 +637,7 @@ async def chat(request, source):
         mongo.append_message(source, query, response)
     
     
-    # print(f' query: {query}\n response: {response}')
+    print(f' query: {query}\n response: {response}')
     # print(f'full response: "response": {response}, "show_update_checkbox": {show_update_checkbox}, "questions":{questions_list}')
     return sanic.response.json({"response": response, "show_update_checkbox": show_update_checkbox, "questions":questions_list})
 
