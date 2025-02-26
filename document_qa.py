@@ -313,9 +313,13 @@ class DocumentQA:
         if generate_questions:
             cleaned_questions = re.sub(r"^```json\n|\n```$", "", response.strip())
 
-            # Parse as JSON
-            questions_list = json.loads(cleaned_questions)
-            return questions_list
+            try:
+                # Parse as JSON
+                questions_list = json.loads(cleaned_questions)
+                return questions_list
+            except Exception as ex:
+                print(f'error document_qa.py parse questions: {ex} \n\n got_questions: {cleaned_questions}')
+                return []
         else:
             # Get LLM response
             return response

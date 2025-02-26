@@ -368,7 +368,7 @@ def get_lean_canvas_questions(user_id):
             # Save to mongo for next time
             mongo.add_canvas_question_field(user_id=user_id, field=key, value=value)
             
-            questions[key] = value.format(source='<this-product>')
+            questions[key] = value.format(source='\<this-product\>')
             
     return questions
 
@@ -396,11 +396,8 @@ async def dashboard(request):
     user_info = session['user_info']
     print(f'\n\n user_info: {user_info} \n\n')
 
-    sources = list(
-        mongo.summary_collection.find({})
-            .sort("created_at", -1)  # Sort by created_at in descending order
-    )
-
+    sources = mongo.get_users_with_specific_ids([0, user_info['id']])
+    
     # Get questions
     source = "`your_product`"
     questions = get_lean_canvas_questions(user_id=user_info['id'])
@@ -532,25 +529,29 @@ async def add_source_new(request):
     # Handle POST request
     print('\n\nadding new source')
     data = request.json
-    source = data.get("projectName")
-    
-    purpose = data.get("projectPurpose")
-    print(f'\n\n source: {source}, purpose:{purpose}')
+    source = urllib.parse.unquote(data.get("projectName"))
+    purpose = urllib.parse.unquote(data.get("projectPurpose"))
+    user_id = data.get("user_id")
+    print(f'\n\ngot user_id: {type(user_id)} {user_id}\n\n')
+    user_id = urllib.parse.unquote(user_id)
+
+    # To make source unique among different users
+    source = source+"_source_"+user_id
+
+    print(f'\n\n source: {source}, purpose:{purpose}, user_id:{user_id}')
     try:
         summaries = {}
-        questions = get_questions(source)
+        # questions = get_questions(source)
         # print(questions)
 
         # Dummy summary data
-        for q_key, q_template in questions.items():
-            summaries[q_key] = "• Not enough information."
+        summaries = get_lean_canvas_questions(user_id)
         
-        
-
         # print(f'summaries: {summaries}')
         # Save summary to MongoDB
         summary_doc = {
             "source": source,
+            "user_id": user_id,
             "summaries": summaries,
             "tagline":'',
             "purpose":purpose,  # purpose is either "brainstorm" or "due_diligence"

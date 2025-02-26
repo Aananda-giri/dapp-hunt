@@ -330,7 +330,7 @@
           <button onclick="closeProjectModal()" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">
               Cancel
           </button>
-          <button onclick="submitProject()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+          <button onclick="submitProject('{{user_info.id}}');" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
               Create
           </button>
       </div>
@@ -416,10 +416,10 @@
       document.getElementById('add_project').classList.add('hidden');
   }
 
-  async function submitProject() {
+  async function submitProject(user_id) {
       const projectName = document.getElementById('projectName').value;
       const projectPurpose = document.getElementById('projectPurpose').value;
-      console.log(`name: ${projectName} purpose: ${projectPurpose}`);
+      console.log(`name: ${projectName} purpose: ${projectPurpose} user_id: ${user_id}` );
 
       try {
         const response = await fetch('/add_source_new', {
@@ -427,7 +427,8 @@
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 projectName: projectName,
-                projectPurpose: projectPurpose
+                projectPurpose: projectPurpose,
+                user_id: user_id
             })
         });
 
@@ -441,7 +442,7 @@
     } finally {
         // window.location.href = "/canvas/aptos"; // Redirect to home page
     
-        window.location.href = `/canvas/${projectName}`; // Redirect to home page
+        window.location.href = `/canvas/${projectName}_source_${user_id}`; // Redirect to home page
         closeProjectModal();
     }
     

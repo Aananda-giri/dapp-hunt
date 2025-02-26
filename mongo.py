@@ -309,6 +309,10 @@ class Mongo():
             upsert=True  # Creates the document if user_id does not exist
         )
         return result.modified_count > 0  # Returns True if a field was added/updated
+    
+    def get_users_with_specific_ids(self, user_id_list):
+        """Retrieves entries where user_id is either 0 or 101."""
+        return list(self.summary_collection.find({"user_id": {"$in": user_id_list}}))
 
 if __name__=="__main__":
     # delete all data and create unique index for field: 'url'
