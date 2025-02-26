@@ -5,6 +5,62 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PitchReady Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+        font-family: Arial, sans-serif;
+    }
+    .profile-container {
+    position: relative;
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px;
+    }
+    .profile-button {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    border: none;
+    background: none;
+    }
+    .profile-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    object-fit: cover;
+    }
+    .dropdown {
+    display: none;
+    position: absolute;
+    top: 50px;
+    right: 0;
+    width: 150px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .dropdown.active {
+    display: block;
+    }
+    .auth-item{
+        color: blue !important;
+        font-weight: 1000;
+    }
+    .dropdown-item {
+        color:black;
+        padding: 10px;
+        cursor: pointer;
+        text-align: center;
+        border-bottom: 1px solid #eee;
+    }
+    .dropdown-item:last-child {
+    border-bottom: none;
+    }
+    .dropdown-item:hover {
+    background: #f5f5f5;
+    }
+</style>
 </head>
 <body class="bg-gray-100">
   <!-- Navbar -->
@@ -16,10 +72,31 @@
                  alt="Logo"
                  class="h-10 w-10 object-cover object-center">
             <a href="/landing" class="ml-3 text-2xl font-semibold text-gray-800">PitchReady</a>
+            
         </div>
         <button onclick="openProjectModal()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
             + Create New Project
         </button>
+        <div class="profile-container">
+          {% if user_info %}
+          <button class="profile-button" onclick="toggleDropdown()">
+              <img src={{user_info.picture}} alt="Profile" class="profile-pic" />
+              </button>
+              <div class="dropdown" id="profileDropdown">
+                  <div class="dropdown-item" id="username">{{ user_info.name }}</div>
+                  <a href="/logout" class="dropdown-item auth-item" id="authAction">Logout</a>
+              </div>
+          {% else %}
+              <button class="profile-button" onclick="toggleDropdown()">
+                  <img src="https://s3.amazonaws.com/37assets/svn/765-default-avatar.png" alt="Profile" class="profile-pic" />
+              </button>
+                  <div class="dropdown" id="profileDropdown">
+                      <a href="/login" class="dropdown-item auth-item" id="authAction"> Login </a>
+                  </div>
+      
+              {% endif %}
+          </div>
+        
     </div>
 </nav>
 
@@ -76,7 +153,14 @@
           <h2 class="text-3xl font-bold text-gray-800 mb-4 mt-10">Your Canvas Format</h2>
           <div class="grid grid-cols-2 gap-6">
                 {% for key, value in questions.items() %}
-                    <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="bg-white p-6 rounded-lg shadow-md relative inline-block">
+                          <button onclick="deleteQuestionField('{{user_info.id}}', '{{key}}');" class="absolute right-2 top-2 p-1.5 text-gray-400 hover:text-red-500 rounded-full transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                            </svg>
+                        </button>  
                         <h3 class="text-xl font-semibold text-gray-700">{{key}}</h3>
                         <p class="text-gray-600">{{value}}</p>
                     <!-- <h3 class="text-xl font-semibold text-gray-700">Problem</h3>
@@ -217,7 +301,7 @@
       <button onclick="closeModal()" class="bg-gray-400 text-white px-4 py-2 rounded-md mr-2 hover:bg-gray-500">
         Cancel
       </button>
-      <button onclick="saveElement()" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
+      <button onclick="saveElement('{{user_info.id}}')" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
         Save
       </button>
     </div>
@@ -373,34 +457,123 @@
     document.getElementById("canvasModal").classList.add("hidden");
   }
 
-  function saveElement() {
+  async function saveElement(user_id) {
     const name = document.getElementById("elementName").value;
     const prompt = document.getElementById("elementPrompt").value;
 
     if (name && prompt) {
-      // Create new canvas element
-      const container = document.createElement("div");
-      container.classList.add("bg-white", "p-6", "rounded-lg", "shadow-md");
+      //
+      try {
+          const response = await fetch('/add_canvas_question_field', {
+              //  add_source_new
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({
+                  user_id: user_id,
+                  field : name,
+                  value : prompt
+              })
+      });   
+      } catch (error) {
+          console.error('Error:', error);
+          loadingState.classList.add('hidden');
+          submitButton.disabled = false;
+          submitButton.classList.remove('opacity-50');
+          alert('An error occurred. Please try again.');
+      } finally {
+          // Reload the page
+          location.reload();  
+          
+          // Create new canvas element
+          const container = document.createElement("div");
+          container.classList.add("bg-white", "p-6", "rounded-lg", "shadow-md");
 
-      const title = document.createElement("h3");
-      title.classList.add("text-xl", "font-semibold", "text-gray-700");
-      title.textContent = name;
+          const title = document.createElement("h3");
+          title.classList.add("text-xl", "font-semibold", "text-gray-700");
+          title.textContent = name;
 
-      const description = document.createElement("p");
-      description.classList.add("text-gray-600");
-      description.textContent = prompt;
+          const description = document.createElement("p");
+          description.classList.add("text-gray-600");
+          description.textContent = prompt;
 
-      container.appendChild(title);
-      container.appendChild(description);
+          container.appendChild(title);
+          container.appendChild(description);
 
-      // Append to grid
-      document.querySelector("#canvas-format .grid").appendChild(container);
+          // Append to grid
+          document.querySelector("#canvas-format .grid").appendChild(container);
 
-      // Close modal
-      closeModal();
+          // Close modal
+          closeModal();
+          
+          // window.location.href = "/canvas/aptos"; // Redirect to home page
+          // window.location.href = `/dashboard/`; // Reload the page
+      }
     } else {
       alert("Please enter both a name and a prompt.");
     }
   }
+
+  async function deleteQuestionField(user_id, field) {
+    
+      try {
+          const response = await fetch('/delete_canvas_question_field', {
+              //  add_source_new
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({
+                  user_id: user_id,
+                  field : field
+              })
+      });   
+      } catch (error) {
+          console.error('Error:', error);
+          loadingState.classList.add('hidden');
+          submitButton.disabled = false;
+          submitButton.classList.remove('opacity-50');
+          alert('An error occurred. Please try again.');
+      } finally {
+          // reload the page
+          location.reload();
+          // Create new canvas element
+          const container = document.createElement("div");
+          container.classList.add("bg-white", "p-6", "rounded-lg", "shadow-md");
+
+          const title = document.createElement("h3");
+          title.classList.add("text-xl", "font-semibold", "text-gray-700");
+          title.textContent = name;
+
+          const description = document.createElement("p");
+          description.classList.add("text-gray-600");
+          description.textContent = prompt;
+
+          container.appendChild(title);
+          container.appendChild(description);
+
+          // Append to grid
+          document.querySelector("#canvas-format .grid").appendChild(container);
+
+          // Close modal
+          closeModal();
+          
+          // window.location.href = "/canvas/aptos"; // Redirect to home page
+          // window.location.href = `/dashboard/`; // Reload the page
+      }
+  }
+
+  function toggleDropdown() {
+    document.getElementById("profileDropdown").classList.toggle("active");
+  }
+
+  document.addEventListener("click", function (event) {
+    const dropdown = document.getElementById("profileDropdown");
+    const button = document.querySelector(".profile-button");
+
+    if (
+      !button.contains(event.target) &&
+      !dropdown.contains(event.target)
+    ) {
+      dropdown.classList.remove("active");
+    }
+  });
 </script>
 </html>

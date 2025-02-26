@@ -60,6 +60,30 @@ class Mongo():
         # Questions collection
         self.questions_collection = self.db.questions
         self.questions_collection.create_index('source')
+
+        # Session collection for login sessions
+        self.session_collection = self.db.session
+        # Create TTL index for auto-expiring sessions if it doesn't exist
+        self.session_collection.create_index("expires", expireAfterSeconds=0)
+
+        # Canvas questions
+        self.canvas_question_collection = self.db.canvas_question_collection
+        self.canvas_question_collection.create_index('user_id', unique=True)
+        '''
+        example data canvas_question_collection:
+        {
+            "user_id":"110498293652394239535",
+            'overall': 'What is <your-product-name>? Give a description of what it does and why it exists.',
+            'target_users': 'Who is <your-product-name> intended for? These groups of people are called target users.',
+            'problems': 'What are the reasons for target users to seek out, and adopt, <your-product-name>?',
+            'solutions': 'How does <your-product-name> address each one of these reasons?',
+            'unfair_advantage': 'What makes <your-product-name> difficult to compete with?',
+            'unique_value_proposition': 'What makes <your-product-name> unique or special compared to others?',
+            'channels': 'Which channels does <your-product-name> use to reach its target users?',
+            'costs': 'What operating costs are incurred by <your-product-name>?',
+            'revenue': 'How does <your-product-name> generate revenue?'
+        }
+        '''
     
     def ping(self):
         # Send a ping to confirm a successful connection
@@ -262,24 +286,30 @@ class Mongo():
         update_fields = {key: value for key, value in updated_data.items() if key in ["source", "question", "answer"]}
         result = self.questions_collection.update_one({"_id": ObjectId(question_id)}, {"$set": update_fields})
         return result.modified_count > 0
-
-    # def update_summary(self, source, summaries):
-    #     created_at= datetime.now()
-        
-    #     # Define the update operation
-    #     update = {
-    #         "$set": {
-    #             "summaries": summaries,
-    #             "created_at": created_at
-    #         }
-    #     }
     
-    #     # update if exists, create new otherwise
-    #     query = {"source": source}
+    def delete_canvas_question_field(self, user_id: str, field: str):
+        """
+        Deletes a specific field from a user's document.
+        user_id: it is userid given by google
 
-    #     # Use update_one with upsert=True
-    #     response = self.summary_collection.update_one(query, update, upsert=True)
-    #     print(response)
+        
+        user_id is unique
+        """
+        result = self.canvas_question_collection.update_one(
+            {"user_id": user_id},
+            {"$unset": {field: ""}}
+        )
+        return result.modified_count > 0  # Returns True if a field was deleted
+
+    def add_canvas_question_field(self, user_id: str, field: str, value: str):
+        """Adds or updates a specific field in a user's document."""
+        result = self.canvas_question_collection.update_one(
+            {"user_id": user_id},
+            {"$set": {field: value}},
+            upsert=True  # Creates the document if user_id does not exist
+        )
+        return result.modified_count > 0  # Returns True if a field was added/updated
+
 if __name__=="__main__":
     # delete all data and create unique index for field: 'url'
     mongo = Mongo()

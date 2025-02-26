@@ -1,9 +1,9 @@
-
 import aiohttp
 import asyncio
 from bs4 import BeautifulSoup
 from datetime import datetime
 from fpdf import FPDF
+import hashlib
 import json
 import os
 import sanic
@@ -11,13 +11,14 @@ from sanic import Sanic
 from sanic.response import file
 from sanic_jinja2 import SanicJinja2
 
+import time
 from typing import Dict, List
 
-
-
+import json as json_lib
+from sanic.response import redirect, text
 
 import urllib.parse
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlencode
 
 # Initialize Sanic app
 app = Sanic("DocumentQA")
@@ -36,6 +37,265 @@ ATOMA_BEARER = os.environ.get("ATOMA_BEARER")
 assert ATOMA_BEARER != None, "atoma api key is none"
 
 from youtube_functions import get_subtitle, is_youtube_url
+
+# =================================================================
+#      ==================== Google-Login =====================
+# =================================================================
+
+# Load Google OAuth credentials
+# In production, you'd load this from a secure location
+# For this example, we'll define it directly (replace with your actual credentials)
+GOOGLE_CLIENT_CONFIG = {
+    'client_id': os.environ.get('client_id'),
+    'project_id': os.environ.get('project_id'),
+    'auth_uri': os.environ.get('auth_uri'),
+    'token_uri': os.environ.get('token_uri'),
+    'auth_provider_x509_cert_url': os.environ.get('auth_provider_x509_cert_url'),
+    'client_secret': os.environ.get('client_secret'),
+    'redirect_uris': [os.environ.get('redirect_uris')],
+    'javascript_origins': [os.environ.get('javascript_origins')],
+}
+
+# OAuth settings
+SCOPES = ['openid', 'email', 'profile']
+REDIRECT_URI = 'http://localhost:5000/callback'
+
+# Session settings
+SESSION_COOKIE_NAME = "session_id"
+SESSION_EXPIRY = 3600  # Session expires after 1 hour
+DB_NAME = "oauth_app"
+
+# Initialize MongoDB connection
+@app.listener('before_server_start')
+async def setup_mongo(app, loop):
+    # app.ctx.mongo_client = mongo
+    app.ctx.mongo = mongo
+
+@app.listener('after_server_stop')
+async def close_mongo(app, loop):
+    # app.ctx.mongo_client.close()
+    pass
+
+# Helper functions for session management
+def generate_session_id(user_info):
+    """Generate a unique session ID based on user info and timestamp"""
+    session_data = str(user_info) + str(time.time())
+    return hashlib.sha256(session_data.encode()).hexdigest()
+
+async def create_session(request, user_info):
+    """Create a new session for a user in MongoDB"""
+    session_id = generate_session_id(user_info)
+    expires = time.time() + SESSION_EXPIRY
+    
+    # Store session in MongoDB
+    request.app.ctx.mongo.session_collection.insert_one({
+        "session_id": session_id,
+        "user_info": user_info,
+        "expires": expires,
+        # Store expires as a timestamp that MongoDB can use for TTL index
+        "expires_at": {"$date": int(expires * 1000)}
+    })
+    
+    return session_id
+
+async def get_session(request, session_id):
+    """Get and validate a session from MongoDB"""
+    if not session_id:
+        return None
+    
+    # Find session in MongoDB
+    session = request.app.ctx.mongo.session_collection.find_one({
+        "session_id": session_id
+    })
+    
+    if not session:
+        return None
+        
+    # Check if session has expired
+    if session["expires"] < time.time():
+        await delete_session(request, session_id)
+        return None
+        
+    return session
+
+async def delete_session(request, session_id):
+    """Delete a session from MongoDB"""
+    request.app.ctx.mongo.session_collection.delete_one({
+        "session_id": session_id
+    })
+
+# Middleware to check for authenticated sessions
+@app.middleware('request')
+async def check_session(request):
+    # require authentication for /canvas, /data, /questions
+    if request.path in ['/dashboard','/canvas', '/data', '/questions']:
+        # return
+        # Check for session cookie
+        session_id = request.cookies.get(SESSION_COOKIE_NAME)
+        session = await get_session(request, session_id)
+        
+        if not session:
+            return redirect('/login')
+
+@app.route('/login')
+async def login(request):
+    """Redirect to Google's OAuth 2.0 authorization page"""
+    auth_params = {
+        'client_id': GOOGLE_CLIENT_CONFIG['client_id'],
+        'redirect_uri': REDIRECT_URI,
+        'response_type': 'code',
+        'scope': ' '.join(SCOPES),
+        'access_type': 'offline',
+        'prompt': 'consent',
+        'include_granted_scopes': 'true'
+    }
+    
+    auth_url = f"{GOOGLE_CLIENT_CONFIG['auth_uri']}?{urlencode(auth_params)}"
+    return redirect(auth_url)
+
+
+@app.route('/callback')
+async def callback(request):
+    """Handle the OAuth callback from Google"""
+    # Get authorization code from the callback
+    code = request.args.get('code')
+    if not code:
+        return text("Authorization code not received", status=400)
+    
+    # Exchange authorization code for tokens
+    token_data = {
+        'code': code,
+        'client_id': GOOGLE_CLIENT_CONFIG['client_id'],
+        'client_secret': GOOGLE_CLIENT_CONFIG['client_secret'],
+        'redirect_uri': REDIRECT_URI,
+        'grant_type': 'authorization_code'
+    }
+    
+    async with aiohttp.ClientSession() as session:
+        async with session.post(GOOGLE_CLIENT_CONFIG['token_uri'], data=token_data) as resp:
+            if resp.status != 200:
+                error_msg = await resp.text()
+                return text(f"Token exchange failed: {error_msg}", status=400)
+            
+            token_response = await resp.json()
+            access_token = token_response.get('access_token')
+            id_token = token_response.get('id_token')
+            
+    # Use the access token to get user info
+    async with aiohttp.ClientSession() as session:
+        async with session.get('https://www.googleapis.com/oauth2/v1/userinfo', 
+                               headers={'Authorization': f'Bearer {access_token}'}) as resp:
+            if resp.status != 200:
+                error_msg = await resp.text()
+                return text(f"Failed to get user info: {error_msg}", status=400)
+            
+            user_info = await resp.json()
+    
+    # Create a session for the user in MongoDB
+    session_id = await create_session(request, user_info)
+    
+    # Redirect to dashboard with the session cookie
+    response = redirect('/dashboard')
+    response.add_cookie(
+        SESSION_COOKIE_NAME,
+        session_id,
+        httponly=True,
+        max_age=SESSION_EXPIRY
+    )
+    
+    return response
+
+@app.route('/session-info')
+async def session_info(request):
+    """Display session information from MongoDB"""
+    session_id = request.cookies.get(SESSION_COOKIE_NAME)
+    session = await get_session(request, session_id)
+    
+    if not session:
+        return redirect('/login')
+    
+    # Get all active sessions for demo purposes (in production, you might want to limit this)
+    active_sessions = request.app.ctx.mongo.session_collection.find({}).to_list(length=10)
+    
+    # Format session data for display
+    formatted_sessions = []
+    for sess in active_sessions:
+        # Convert ObjectId to string for JSON serialization
+        sess['_id'] = str(sess['_id'])
+        # Format expires timestamp to readable date
+        if 'expires' in sess:
+            sess['expires_human'] = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(sess['expires']))
+        formatted_sessions.append(sess)
+    
+    return sanic.response.html(f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Session Information</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }}
+            .container {{ max-width: 900px; margin: 0 auto; }}
+            .session-data {{ background-color: #f5f5f5; padding: 20px; border-radius: 4px; overflow: auto; }}
+            .current-session {{ border-left: 4px solid #4CAF50; }}
+            .buttons {{ margin-top: 20px; }}
+            .btn {{
+                display: inline-block;
+                background-color: #4285F4;
+                color: white;
+                padding: 10px 20px;
+                text-decoration: none;
+                border-radius: 4px;
+                margin-right: 10px;
+                transition: background-color 0.3s;
+            }}
+            .btn:hover {{ background-color: #3367D6; }}
+            .logout-btn {{ background-color: #f44336; }}
+            .logout-btn:hover {{ background-color: #d32f2f; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Session Information</h1>
+            
+            <h2>Your Current Session</h2>
+            <p>Session ID: <strong>{session_id}</strong></p>
+            <div class="session-data current-session">
+                <pre>{json_lib.dumps(session, indent=2, default=str)}</pre>
+            </div>
+            
+            <h2>All Active Sessions in MongoDB ({len(formatted_sessions)})</h2>
+            <p>This is for demonstration purposes. In a production app, you would not display all sessions.</p>
+            <div class="session-data">
+                <pre>{json_lib.dumps(formatted_sessions, indent=2)}</pre>
+            </div>
+            
+            <div class="buttons">
+                <a href="/dashboard" class="btn">Back to Dashboard</a>
+                <a href="/" class="btn">Home</a>
+                <a href="/logout" class="btn logout-btn">Logout</a>
+            </div>
+        </div>
+    </body>
+    </html>
+    """)
+
+@app.route('/logout')
+async def logout(request):
+    """Log the user out and redirect to the homepage"""
+    session_id = request.cookies.get(SESSION_COOKIE_NAME)
+    
+    # Delete the session from MongoDB if it exists
+    if session_id:
+        await delete_session(request, session_id)
+    
+    # Clear the session cookie
+    response = redirect('/')
+    response.delete_cookie(SESSION_COOKIE_NAME)
+    
+    return response
+
+# =================================================================
+
 
 # Initialize our DocumentQA system
 qa_system = DocumentQA(
@@ -95,19 +355,21 @@ def generate_pdf(source: str, qa_results: Dict[str, str]) -> str:
     pdf.output(filename)
     return filename
 
-def get_lean_canvas_questions(source):
-    questions = {}
-    for key, value in qa_system.questions.items():
-        questions[key] = value.format(source=source)
+def get_lean_canvas_questions(user_id):
+    # get_lean_canvas_questions
+    questions = mongo.canvas_question_collection.find_one({'user_id':user_id}, projection={'_id': False, 'user_id':False})
     
-    
-    '''
-    # need to create questions for individual project or for individual user
-    questions = mongo.questions_collection.find_one({"source":source})
     if not questions:
+        print(f'getting questions from template')
+        questions = {}
         
-        mongo.questions_collection.insert_one({"source":source})
-    '''
+        # Get questions templates
+        for key, value in qa_system.questions.items():
+            # Save to mongo for next time
+            mongo.add_canvas_question_field(user_id=user_id, field=key, value=value)
+            
+            questions[key] = value.format(source='<this-product>')
+            
     return questions
 
 # @app.route("/")
@@ -125,8 +387,15 @@ def get_lean_canvas_questions(source):
 @jinja.template("dashboard.html")
 async def dashboard(request):
     """Home page listing all sources"""
-    # sources = mongo.summary_collection.distinct("source")
+    session_id = request.cookies.get(SESSION_COOKIE_NAME)
+    session = await get_session(request, session_id)
+
+    if not session:
+        return redirect('/login')
     
+    user_info = session['user_info']
+    print(f'\n\n user_info: {user_info} \n\n')
+
     sources = list(
         mongo.summary_collection.find({})
             .sort("created_at", -1)  # Sort by created_at in descending order
@@ -134,24 +403,33 @@ async def dashboard(request):
 
     # Get questions
     source = "`your_product`"
-    questions = get_lean_canvas_questions(source='`your_product`')
+    questions = get_lean_canvas_questions(user_id=user_info['id'])
     
     print(f'questions: {questions}')
 
     download_files = [filename.split('_')[0] for filename in os.listdir('summaries')]
     
-    return {"sources": sources, "questions":questions, "download_files":download_files}
+    return {"sources": sources, "questions":questions, "download_files":download_files, "user_info":user_info}
 
 @app.route("/")
 @jinja.template("landing.html")
 async def landing(request):
     """Home page listing all sources"""
     # sources = mongo.summary_collection.distinct("source")
+    session_id = request.cookies.get(SESSION_COOKIE_NAME)
+    session = await get_session(request, session_id)
+
+    if session:
+        user_info = session['user_info']
+    else:
+        user_info=None
+       
+    print(f"\n\nuser_info:{user_info}\n\n")
     sources = list(mongo.summary_collection.aggregate([
             {"$group": {"_id": "$source", "tagline": {"$first": "$tagline"}}},
             {"$project": {"_id": 0, "source": "$_id", "tagline": 1}}
         ]))
-    return {"sources": sources}
+    return {"sources": sources, "user_info":user_info}
 
 @app.route("/add_source", methods=["GET", "POST"])
 @jinja.template("add_source.html")
@@ -279,10 +557,49 @@ async def add_source_new(request):
             "created_at": datetime.now()
         }
         mongo.summary_collection.insert_one(summary_doc)
-        return {"success":True}
+        return sanic.response.json({"success":True})
     except Exception as ex:
         print(ex)
-        return {"success":False}
+        return sanic.response.json({"success":False})
+
+@app.route("/add_canvas_question_field", methods=["POST"])
+async def add_canvas_question_field(request):
+    # Handle POST request
+    print('\n\nadding canvas question field')
+    data = request.json
+    user_id = urllib.parse.unquote(data.get("user_id"))
+    field = urllib.parse.unquote(data.get("field"))
+    value = urllib.parse.unquote(data.get("value"))
+    
+    print(f'\n\n user_id: {user_id}, field:{field}, value: {value}')
+    try:
+        mongo.add_canvas_question_field(user_id=user_id, field=field, value=value)
+        return sanic.response.json({"success":True})
+    except Exception as ex:
+        print(ex)
+        return sanic.response.json({"success":False})
+
+@app.route("/delete_canvas_question_field", methods=["POST"])
+async def delete_canvas_question_field(request):
+    """
+    Delete canvas question field
+    """
+        # Handle POST request
+    print('\n\ndeleting canvas question field')
+    data = request.json
+    user_id = urllib.parse.unquote(data.get("user_id"))
+    field = urllib.parse.unquote(data.get("field"))
+    
+    print(f'\n\n delete canvas question:  user_id: \"{user_id}\", field:\"{field}\"')
+    try:
+        deleted = mongo.delete_canvas_question_field(user_id=user_id, field=field)
+        if deleted:
+            return sanic.response.json({"success":True})
+        else:
+            return sanic.response.json({"success":False})
+    except Exception as ex:
+        print(ex)
+        return sanic.response.json({"success":False})
 
 @app.route("/source/<source>")
 @jinja.template("source.html")
@@ -307,6 +624,15 @@ async def source_page(request, source):
 @jinja.template("canvas.html")
 async def canvas(request, source):
     """Individual source page"""
+    session_id = request.cookies.get(SESSION_COOKIE_NAME)
+    session = await get_session(request, session_id)
+
+    if not session:
+        return redirect('/login')
+
+    user_info = session['user_info']
+    print(f"\n\nuser_info: {user_info}\n\n")
+
     # summary = mongo.summary_collection.find_one({"source": source})
     pipeline = [
         {
@@ -325,7 +651,7 @@ async def canvas(request, source):
     summary = mongo.summary_collection.find_one({'source':source})
     if not summary or source=="your-project-name":
         summaries = {}
-        questions = get_lean_canvas_questions(source)
+        questions = get_lean_canvas_questions(user_id=user_info['id'])
         # print(questions)
 
         # Dummy summary data
@@ -370,7 +696,8 @@ async def canvas(request, source):
         "pdf_path": f"/download/{source}/summary.pdf",
         "data_sources": data_sources,
         "purpose": purpose,
-        "questions": questions
+        "questions": questions,
+        "user_info": user_info
     }
 
 @app.route("/regenerate_summary", methods=["GET", "POST"])

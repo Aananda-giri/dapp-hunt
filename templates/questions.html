@@ -121,20 +121,35 @@
             justify-content: flex-end;
         }
     
-        .error {
-            color: var(--danger-color);
-            padding: 1rem;
-            background-color: #fee2e2;
-            border-radius: 6px;
-            margin-top: 1rem;
+        #message {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            z-index: 1000;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease-in-out;
         }
-    
+        #message.visible {
+            transform: translateY(0);
+        }
         .success {
-            color: var(--success-color);
-            padding: 1rem;
-            background-color: #dcfce7;
-            border-radius: 6px;
-            margin-top: 1rem;
+            background-color: #dff0d8;
+            color: #3c763d;
+            border-bottom: 1px solid #d6e9c6;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+            border-bottom: 1px solid #ebccd1;
+        }
+        .notice {
+            background-color: #d9edf7;
+            color: #31708f;
+            border-bottom: 1px solid #bce8f1;
         }
     
         .url-header {
@@ -275,6 +290,8 @@
             <textarea id="new_answer_input" placeholder="Enter the answer here"></textarea>
             <button class="btn btn-primary" onclick="addQuestionAnswer()">Add Q&A</button>
         </div>
+        
+        <div id="message"></div>
 
         <div id="content">
             {% if success %}
@@ -358,7 +375,31 @@
             {% endif %}
 
         </div>
-        <div id="message"></div>
+        
+    <script>
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = type;
+            messageDiv.textContent = message;
+            
+            // Force a reflow to make the animation work
+            messageDiv.offsetHeight;
+            
+            // Show the message
+            messageDiv.classList.add('visible');
+            
+            setTimeout(() => {
+                // Hide the message
+                messageDiv.classList.remove('visible');
+                
+                // Clear the content after animation completes
+                setTimeout(() => {
+                    messageDiv.textContent = '';
+                    messageDiv.className = '';
+                }, 300);
+            }, 3000);
+        }
+    </script>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
